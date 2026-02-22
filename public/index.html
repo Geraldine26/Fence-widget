@@ -44,9 +44,8 @@
           <div id="mapContainer" hidden>
             <div id="map"></div>
             <div class="toolbar" role="toolbar" aria-label="Drawing controls">
-              <button id="drawBtn" type="button">Pause</button>
-              <button id="removeLastBtn" type="button" class="secondary">Remove Last Segment</button>
-              <button id="clearAllBtn" type="button" class="danger">Clear All</button>
+              <button id="removeLastBtn" type="button" class="tool-btn secondary">Undo Last</button>
+              <button id="clearAllBtn" type="button" class="tool-btn danger">Clear All</button>
             </div>
           </div>
 
@@ -117,7 +116,10 @@
       </div>
     </main>
 
-    <button id="mobileLeadCta" type="button" class="mobile-lead-cta">Get Exact Quote</button>
+    <div id="mobileSummaryBar" class="mobile-summary-bar">
+      <p id="mobileSummaryText">0.0 ft • $0-$0</p>
+      <button id="mobileLeadCta" type="button" class="mobile-summary-btn">Get Exact Quote</button>
+    </div>
 
     <script src="/widget.js" data-client="demo" defer></script>
   </body>

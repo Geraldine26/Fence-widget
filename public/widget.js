@@ -10,7 +10,7 @@
     addressMarker: null,
     segments: [],
     activeSegment: null,
-    drawPaused: false,
+    addressReady: false,
     totalFeet: 0,
     estimateMin: 0,
     estimateMax: 0,
@@ -31,7 +31,6 @@
     addressInput: document.getElementById("addressInput"),
     addressSearchBtn: document.getElementById("addressSearchBtn"),
 
-    drawBtn: document.getElementById("drawBtn"),
     removeLastBtn: document.getElementById("removeLastBtn"),
     clearAllBtn: document.getElementById("clearAllBtn"),
 
@@ -46,6 +45,7 @@
 
     leadToggleBtn: document.getElementById("leadToggleBtn"),
     mobileLeadCta: document.getElementById("mobileLeadCta"),
+    mobileSummaryText: document.getElementById("mobileSummaryText"),
     leadForm: document.getElementById("leadForm"),
     submitLeadBtn: document.getElementById("submitLeadBtn"),
     customerName: document.getElementById("customerName"),
@@ -219,7 +219,6 @@
       }
     });
 
-    refs.drawBtn.addEventListener("click", togglePauseResume);
     refs.removeLastBtn.addEventListener("click", removeLastSegment);
     refs.clearAllBtn.addEventListener("click", clearAllSegments);
 
@@ -227,6 +226,7 @@
     refs.mobileLeadCta.addEventListener("click", () => {
       openLeadForm();
       refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => refs.customerName.focus(), 250);
     });
 
     refs.leadForm.addEventListener("submit", submitLead);
@@ -329,12 +329,15 @@
     state.geocoder = new google.maps.Geocoder();
 
     state.map.addListener("click", (event) => {
-      if (state.drawPaused) return;
+      if (!state.addressReady) {
+        setStatus("Enter an address to start.", true);
+        return;
+      }
       addPoint(event.latLng);
     });
 
     state.map.addListener("dblclick", () => {
-      if (state.drawPaused) return;
+      if (!state.addressReady) return;
       finishActiveSegment();
     });
   }
@@ -356,7 +359,8 @@
       refs.addressInput.value = formatted;
       refs.customerAddress.value = formatted;
       focusProperty(place.geometry.location, place.geometry.viewport, formatted);
-      setStatus("Address located. Start drawing.", false);
+      state.addressReady = true;
+      setStatus("Address found. Start drawing.", false);
     });
   }
 
@@ -371,6 +375,7 @@
       return;
     }
 
+    setStatus("Searching address...", false);
     state.geocoder.geocode({ address: value, region: "us" }, (results, status) => {
       if (status !== "OK" || !results?.length) {
         setStatus("Address not found. Try again.", true);
@@ -381,7 +386,8 @@
       refs.addressInput.value = result.formatted_address;
       refs.customerAddress.value = result.formatted_address;
       focusProperty(result.geometry.location, result.geometry.viewport, result.formatted_address);
-      setStatus("Address located. Start drawing.", false);
+      state.addressReady = true;
+      setStatus("Address found. Start drawing.", false);
     });
   }
 
@@ -420,6 +426,7 @@
 
     state.activeSegment.getPath().push(latLng);
     recomputeAndRender();
+    setStatus("Drawing... feet updating live.", false);
   }
 
   function finishActiveSegment() {
@@ -433,6 +440,7 @@
     }
     state.activeSegment = null;
     recomputeAndRender();
+    setStatus("Drawing... feet updating live.", false);
   }
 
   function bindSegmentEvents(polyline) {
@@ -445,22 +453,16 @@
         state.segments = state.segments.filter((seg) => seg !== polyline);
       }
       recomputeAndRender();
+      setStatus("Drawing... feet updating live.", false);
     });
 
     const path = polyline.getPath();
     ["insert_at", "set_at", "remove_at"].forEach((evt) => {
-      google.maps.event.addListener(path, evt, recomputeAndRender);
+      google.maps.event.addListener(path, evt, () => {
+        recomputeAndRender();
+        setStatus("Drawing... feet updating live.", false);
+      });
     });
-  }
-
-  function togglePauseResume() {
-    state.drawPaused = !state.drawPaused;
-    refs.drawBtn.textContent = state.drawPaused ? "Resume" : "Pause";
-    refs.drawBtn.classList.toggle("active", !state.drawPaused);
-
-    if (state.drawPaused) {
-      finishActiveSegment();
-    }
   }
 
   function removeLastSegment() {
@@ -469,6 +471,7 @@
     if (!last) return;
     last.setMap(null);
     recomputeAndRender();
+    setStatus("Drawing... feet updating live.", false);
   }
 
   function clearAllSegments() {
@@ -479,6 +482,9 @@
     state.segments.forEach((seg) => seg.setMap(null));
     state.segments = [];
     recomputeAndRender();
+    if (state.addressReady) {
+      setStatus("Address found. Start drawing.", false);
+    }
   }
 
   function getFenceTypes() {
@@ -600,6 +606,9 @@
 
     refs.totalFeet.textContent = `${formatNum(calc.feet)} ft`;
     refs.estimatedPrice.textContent = `${formatMoney(calc.estimatedMin)} - ${formatMoney(calc.estimatedMax)}`;
+    refs.mobileSummaryText.textContent = `${formatNum(calc.feet)} ft • ${formatMoney(calc.estimatedMin)}-${formatMoney(
+      calc.estimatedMax
+    )}`;
 
     refs.estimateBreakdown.innerHTML = [
       `Material: ${formatMoney(calc.breakdown.materialMin)} - ${formatMoney(calc.breakdown.materialMax)}`,

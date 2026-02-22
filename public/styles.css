@@ -96,10 +96,19 @@ body {
 }
 
 .toolbar {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.tool-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 9px;
+  box-shadow: none;
+  opacity: 0.92;
 }
 
 button {
@@ -230,13 +239,35 @@ input {
   color: var(--muted);
 }
 
-.mobile-lead-cta {
+.mobile-summary-bar {
   display: none;
   position: fixed;
   left: 12px;
   right: 12px;
   bottom: 12px;
   z-index: 50;
+  background: #0f2029;
+  color: #fff;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 14px 30px rgba(10, 25, 35, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#mobileSummaryText {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mobile-summary-btn {
+  white-space: nowrap;
+  padding: 9px 12px;
+  font-size: 13px;
 }
 
 @media (max-width: 1000px) {
@@ -261,20 +292,28 @@ input {
     margin-top: 10px;
   }
 
-  .mobile-lead-cta {
-    display: inline-block;
+  .mobile-summary-bar {
+    display: flex;
   }
 
   body.form-open {
     padding-bottom: 0;
   }
 
-  body.form-open .mobile-lead-cta {
+  body.form-open .mobile-summary-bar {
     display: none;
   }
 }
 
 @media (max-width: 680px) {
+  .widget-header h1 {
+    font-size: 34px;
+  }
+
+  .card h2 {
+    font-size: 26px;
+  }
+
   .address-row {
     grid-template-columns: 1fr;
   }
@@ -285,5 +324,9 @@ input {
 
   .widget {
     padding-bottom: 84px;
+  }
+
+  .layout {
+    gap: 10px;
   }
 }
