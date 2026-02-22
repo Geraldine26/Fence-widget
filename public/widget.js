@@ -219,7 +219,7 @@
     refs.clearAllBtn.addEventListener("click", clearAllSegments);
 
     refs.leadToggleBtn.addEventListener("click", () => {
-      if (state.totalFeet <= 0) {
+      if (state.totalFeet <= 0 || state.segments.length + (state.activeSegment ? 1 : 0) <= 0) {
         setStatus("Measure fence first.", true);
         return;
       }
@@ -672,7 +672,30 @@
   }
 
   function recomputeAndRender() {
-    const calc = computeEstimate();
+    let calc = computeEstimate();
+
+    if (calc.segmentsCount <= 0 || calc.feet <= 0) {
+      calc = {
+        ...calc,
+        feet: 0,
+        walkQty: 0,
+        doubleQty: 0,
+        removeOld: false,
+        estimatedMin: 0,
+        estimatedMax: 0,
+        breakdown: {
+          materialMin: 0,
+          materialMax: 0,
+          walkMin: 0,
+          walkMax: 0,
+          doubleMin: 0,
+          doubleMax: 0,
+          removalMin: 0,
+          removalMax: 0,
+        },
+        segmentsCount: 0,
+      };
+    }
 
     state.totalFeet = calc.feet;
     state.estimateMin = calc.estimatedMin;
@@ -694,6 +717,7 @@
       .map((row) => `<div>${row}</div>`)
       .join("");
 
+    refs.leadToggleBtn.disabled = calc.segmentsCount <= 0 || calc.feet <= 0;
     applyMobileCtaState(calc);
   }
 
@@ -703,7 +727,7 @@
       return;
     }
 
-    if (state.overlayOpen || calc.feet <= 0) {
+    if (state.overlayOpen || calc.feet <= 0 || calc.segmentsCount <= 0) {
       refs.mobileSummaryBar.classList.remove("is-visible");
       state.optionsConfirmed = false;
       refs.mobileLeadCta.textContent = "Continue";
@@ -720,7 +744,7 @@
       return;
     }
 
-    if (state.totalFeet <= 0) return;
+    if (state.totalFeet <= 0 || state.segments.length + (state.activeSegment ? 1 : 0) <= 0) return;
 
     if (!state.optionsConfirmed) {
       state.optionsConfirmed = true;
