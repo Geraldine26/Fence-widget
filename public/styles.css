@@ -70,6 +70,18 @@ body {
   margin-top: 0;
 }
 
+.address-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.address-row button {
+  height: 40px;
+}
+
 #map {
   height: 420px;
   width: 100%;
@@ -151,6 +163,10 @@ input {
 
 @media (max-width: 900px) {
   .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .address-row {
     grid-template-columns: 1fr;
   }
 
