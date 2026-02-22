@@ -26,7 +26,8 @@
 
       <div class="layout">
         <section class="card">
-          <h2>Fence Layout</h2>
+          <h2>Fence Measurement</h2>
+
           <div class="address-row">
             <div>
               <label for="addressInput">Property address</label>
@@ -39,36 +40,77 @@
             </div>
             <button id="addressSearchBtn" type="button">Locate</button>
           </div>
+
           <div id="mapContainer" class="map-wrap" hidden>
             <div id="map"></div>
             <div class="toolbar" role="toolbar" aria-label="Drawing controls">
               <button id="drawBtn" type="button">Pause Draw</button>
-              <button id="resetBtn" type="button" class="secondary">Reset</button>
+              <button id="removeLastBtn" type="button" class="secondary">Remove Last</button>
+              <button id="clearAllBtn" type="button" class="danger">Clear All</button>
             </div>
           </div>
+
           <div id="manualFeetWrap" class="manual-feet" hidden>
             <label for="manualFeetInput">Linear feet</label>
-            <input id="manualFeetInput" type="number" min="0" step="1" value="0" />
+            <input id="manualFeetInput" type="number" min="0" step="0.1" value="0" />
             <p class="muted">Map unavailable. Enter total feet manually.</p>
           </div>
-          <p class="muted">Tip: click to add points, double click to close segment, right click line to remove it.</p>
+
+          <p class="muted" id="mapHint">
+            Draw mode starts active. Double click to close each segment. Drag vertices to edit live.
+          </p>
         </section>
 
-        <section class="card">
+        <aside class="card estimate-panel" id="estimatePanel">
           <h2>Estimate</h2>
+
           <label for="fenceType">Fence type</label>
           <select id="fenceType"></select>
 
-          <div class="results">
-            <p>Total linear feet</p>
-            <p id="totalFeet" class="metric">0 ft</p>
+          <div class="addons-grid">
+            <label for="walkGateQty">Walk gate qty</label>
+            <input id="walkGateQty" type="number" min="0" step="1" value="0" />
+
+            <label for="doubleGateQty">Double gate qty</label>
+            <input id="doubleGateQty" type="number" min="0" step="1" value="0" />
+
+            <label class="checkbox-row" for="removeOldFence">
+              <input id="removeOldFence" type="checkbox" />
+              Remove old fence
+            </label>
           </div>
 
           <div class="results">
-            <p>Estimated price</p>
-            <p id="estimatedPrice" class="metric">$0</p>
+            <p>Total linear feet</p>
+            <p id="totalFeet" class="metric">0.0 ft</p>
           </div>
-        </section>
+
+          <div class="results">
+            <p>Estimated range</p>
+            <p id="estimatedPrice" class="metric">$0 - $0</p>
+          </div>
+
+          <div class="breakdown" id="estimateBreakdown"></div>
+
+          <form id="leadForm" class="lead-form" novalidate>
+            <h3>Get Exact Quote</h3>
+            <label for="customerName">Full Name</label>
+            <input id="customerName" name="customerName" type="text" required />
+
+            <label for="customerPhone">Phone</label>
+            <input id="customerPhone" name="customerPhone" type="tel" required />
+
+            <label for="customerEmail">Email</label>
+            <input id="customerEmail" name="customerEmail" type="email" required />
+
+            <label for="customerAddress">Property Address</label>
+            <input id="customerAddress" name="customerAddress" type="text" required />
+
+            <input id="websiteTrap" name="website" type="text" autocomplete="off" tabindex="-1" />
+
+            <button id="submitLeadBtn" type="submit">Send Quote Request</button>
+          </form>
+        </aside>
       </div>
     </main>
 
