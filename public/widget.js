@@ -524,8 +524,19 @@
     }
     state.segments.forEach((seg) => seg.setMap(null));
     state.segments = [];
+
+    refs.manualFeetInput.value = "0";
+    refs.walkGateQty.value = "0";
+    refs.doubleGateQty.value = "0";
+    refs.removeOldFence.checked = false;
+    state.optionsConfirmed = false;
+
     recomputeAndRender();
-    if (state.addressReady) setStatus("Address found. Start drawing.", false);
+    if (state.addressReady) {
+      setStatus("Ready to draw.", false);
+    } else {
+      setStatus("Enter an address to start.", false);
+    }
   }
 
   function getFenceTypes() {
@@ -596,13 +607,37 @@
     const feetMap = computeFeetFromMap();
     const feetManual = toPositive(refs.manualFeetInput.value);
     const feet = feetMap > 0 ? feetMap : feetManual;
-
-    const perFt = getPricePerFt(fenceType);
-    const addons = getAddons();
+    const segmentsCount = state.segments.length + (state.activeSegment ? 1 : 0);
 
     const walkQty = toPositiveInt(refs.walkGateQty.value);
     const doubleQty = toPositiveInt(refs.doubleGateQty.value);
     const removeOld = refs.removeOldFence.checked;
+
+    if (segmentsCount === 0 || feet === 0) {
+      return {
+        fenceType,
+        feet: 0,
+        walkQty: 0,
+        doubleQty: 0,
+        removeOld: false,
+        estimatedMin: 0,
+        estimatedMax: 0,
+        breakdown: {
+          materialMin: 0,
+          materialMax: 0,
+          walkMin: 0,
+          walkMax: 0,
+          doubleMin: 0,
+          doubleMax: 0,
+          removalMin: 0,
+          removalMax: 0,
+        },
+        segmentsCount: 0,
+      };
+    }
+
+    const perFt = getPricePerFt(fenceType);
+    const addons = getAddons();
 
     const materialMin = perFt.low * feet;
     const materialMax = perFt.high * feet;
@@ -615,8 +650,6 @@
 
     const estimatedMin = materialMin + walkMin + doubleMin + removalMin;
     const estimatedMax = materialMax + walkMax + doubleMax + removalMax;
-
-    const segmentsCount = state.segments.length + (state.activeSegment ? 1 : 0);
 
     return {
       fenceType,
