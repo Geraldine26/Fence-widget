@@ -11,6 +11,7 @@
     drawMode: false,
     editMode: false,
     totalFeet: 0,
+    hasWarning: false,
   };
 
   const refs = {
@@ -48,7 +49,9 @@
     }
 
     recomputeAndRender();
-    setStatus("Ready.", false);
+    if (!state.hasWarning) {
+      setStatus("Ready.", false);
+    }
   }
 
   function parseClientFromUrl() {
@@ -328,6 +331,9 @@
   }
 
   function setStatus(message, isWarning) {
+    if (isWarning) {
+      state.hasWarning = true;
+    }
     refs.status.textContent = message;
     refs.status.style.borderLeftColor = isWarning ? "#c48211" : "var(--primary-color)";
   }
@@ -363,3 +369,4 @@
     }).format(value || 0);
   }
 })();
+
