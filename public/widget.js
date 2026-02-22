@@ -8,8 +8,8 @@
 
   async function loadConfig() {
     try {
-      const res = await fetch(`/config/${CLIENT}.json`);
-      if (!res.ok) throw new Error("Config not found");
+      const res = await fetch(`/config/${CLIENT}.json`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Config not found: ${CLIENT}`);
       return await res.json();
     } catch (err) {
       console.error(err);
@@ -23,7 +23,13 @@
       return;
     }
 
-    // Set primary color dynamically
+    // ✅ White-label demo page title/subtitle
+    const t = document.getElementById("pageTitle");
+    const s = document.getElementById("pageSubtitle");
+    if (t) t.textContent = config.company_name || "Instant Fence Estimate";
+    if (s) s.textContent = config.disclaimer || "";
+
+    // ✅ Set primary color dynamically (keeps your existing variable)
     document.documentElement.style.setProperty(
       "--qw-primary",
       config.primary_color || "#16a34a"
@@ -34,60 +40,75 @@
         <div class="qw-topbar">
           <div class="qw-brand">
             <div class="qw-logo">
-              ${config.logo_url ? `<img src="${config.logo_url}" />` : ""}
+              ${
+                config.logo_url
+                  ? `<img src="${config.logo_url}" alt="Logo" />`
+                  : ""
+              }
             </div>
-            <div>
-              <h2>${config.company_name}</h2>
-              <p>Instant Fence Estimate</p>
+            <div class="qw-brand-text">
+              <div class="qw-company">${config.company_name || ""}</div>
+              <div class="qw-tagline">${config.tagline || "Instant Fence Estimate"}</div>
             </div>
           </div>
         </div>
 
         <div class="qw-grid">
           <div class="qw-map">
-            <div style="color:white;padding:20px;">
+            <div class="qw-map-placeholder">
               Map will go here (Google Maps next step)
             </div>
           </div>
 
           <div class="qw-panel">
-            <div class="qw-section">
-              <div class="qw-label">Fence Type</div>
-              <select class="qw-select" id="fenceType">
-                ${Object.keys(config.pricing).map(type => `
-                  <option value="${type}">${type}</option>
-                `).join("")}
-              </select>
+            <label class="qw-label">Fence Type</label>
+            <select id="qwFenceType" class="qw-input">
+              ${(config.fence_types || ["chainlink", "vinyl", "wood"])
+                .map((t) => `<option value="${t}">${t}</option>`)
+                .join("")}
+            </select>
+
+            <label class="qw-label" style="margin-top:14px;">Estimated Linear Feet</label>
+            <input id="qwFeet" class="qw-input" type="number" min="0" placeholder="Enter feet" />
+
+            <div class="qw-total">
+              <span>Total Estimate</span>
+              <strong id="qwTotal">$0</strong>
             </div>
 
-            <div class="qw-section">
-              <div class="qw-label">Estimated Linear Feet</div>
-              <input class="qw-input" id="linearFeet" type="number" placeholder="Enter feet" />
-            </div>
-
-            <div class="qw-section">
-              <div class="qw-row">
-                <div>Total Estimate</div>
-                <div class="qw-value" id="total">$0</div>
-              </div>
-            </div>
-
-            <button class="qw-btn" id="calculateBtn">Calculate</button>
+            <button id="qwCalc" class="qw-btn">Calculate</button>
           </div>
         </div>
       </div>
     `;
 
-    document.getElementById("calculateBtn").addEventListener("click", () => {
-      const type = document.getElementById("fenceType").value;
-      const feet = parseFloat(document.getElementById("linearFeet").value || 0);
-      const price = config.pricing[type]?.per_ft || 0;
-      const total = feet * price;
+    // --- Simple calculator demo ---
+    const fenceTypeEl = document.getElementById("qwFenceType");
+    const feetEl = document.getElementById("qwFeet");
+    const totalEl = document.getElementById("qwTotal");
+    const btnEl = document.getElementById("qwCalc");
 
-      document.getElementById("total").innerText =
-        "$" + total.toLocaleString();
-    });
+    function money(n) {
+      const v = Number(n || 0);
+      return v.toLocaleString("en-US", { style: "currency", currency: "USD" });
+    }
+
+    function calc() {
+      const feet = Number(feetEl.value || 0);
+      const type = fenceTypeEl.value;
+
+      const pricing = config.pricing_per_ft || {};
+      const perFt = Number(pricing[type] ?? pricing.default ?? 0);
+
+      const total = feet * perFt;
+      totalEl.textContent = money(total);
+    }
+
+    btnEl.addEventListener("click", calc);
   }
 
-  loadConfig().then(render);
+  (async () => {
+    const cfg = await loadConfig();
+    render(cfg);
+  })();
 })();
