@@ -68,10 +68,26 @@
 
           <div class="addons-grid">
             <label for="walkGateQty">Walk Gate Qty</label>
-            <select id="walkGateQty"></select>
+            <div class="stepper" role="group" aria-label="Walk gate quantity">
+              <button id="walkGateMinus" type="button" class="stepper-btn" aria-label="Decrease walk gate">
+                -
+              </button>
+              <input id="walkGateQty" type="number" min="0" max="10" step="1" value="0" readonly />
+              <button id="walkGatePlus" type="button" class="stepper-btn" aria-label="Increase walk gate">
+                +
+              </button>
+            </div>
 
             <label for="doubleGateQty">Double Gate Qty</label>
-            <select id="doubleGateQty"></select>
+            <div class="stepper" role="group" aria-label="Double gate quantity">
+              <button id="doubleGateMinus" type="button" class="stepper-btn" aria-label="Decrease double gate">
+                -
+              </button>
+              <input id="doubleGateQty" type="number" min="0" max="10" step="1" value="0" readonly />
+              <button id="doubleGatePlus" type="button" class="stepper-btn" aria-label="Increase double gate">
+                +
+              </button>
+            </div>
 
             <label class="checkbox-row" for="removeOldFence">
               <input id="removeOldFence" type="checkbox" />
@@ -118,7 +134,7 @@
 
     <div id="mobileSummaryBar" class="mobile-summary-bar">
       <p id="mobileSummaryText">0.0 ft • $0-$0</p>
-      <button id="mobileLeadCta" type="button" class="mobile-summary-btn">Get Exact Quote</button>
+      <button id="mobileLeadCta" type="button" class="mobile-summary-btn">Continue</button>
     </div>
 
     <script src="/widget.js" data-client="demo" defer></script>

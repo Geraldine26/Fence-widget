@@ -167,6 +167,25 @@ input {
   margin-top: 10px;
 }
 
+.stepper {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  gap: 6px;
+  align-items: center;
+}
+
+.stepper-btn {
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.stepper input {
+  text-align: center;
+  font-weight: 700;
+}
+
 .results {
   margin-top: 14px;
   padding: 12px;
@@ -306,16 +325,31 @@ input {
     display: none;
   }
 
-  body.mobile-step-estimate .estimate-panel {
+  body.mobile-step-review .estimate-panel,
+  body.mobile-step-quote-ready .estimate-panel,
+  body.mobile-step-form .estimate-panel {
     display: block;
   }
 
-  body.mobile-step-estimate #map {
+  body.mobile-step-review #map,
+  body.mobile-step-quote-ready #map,
+  body.mobile-step-form #map {
     height: 200px;
   }
 
-  body.mobile-step-estimate .lead-form {
-    display: grid;
+  body.mobile-step-review .lead-form,
+  body.mobile-step-quote-ready .lead-form {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    pointer-events: none;
+  }
+
+  body.mobile-step-form .lead-form {
+    max-height: 1200px;
+    opacity: 1;
+    margin-top: 10px;
+    pointer-events: auto;
   }
 
   body.form-open {
