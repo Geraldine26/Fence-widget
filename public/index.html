@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fence Quote Widget</title>
+    <title>Fence Quote</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,7 +18,7 @@
         <img id="companyLogo" class="company-logo" alt="Company logo" hidden />
         <div>
           <h1 id="companyName">Fence Quote</h1>
-          <p id="disclaimer" class="muted"></p>
+          <p id="tagline" class="muted"></p>
         </div>
       </header>
 
@@ -30,7 +30,7 @@
 
           <div class="address-row">
             <div>
-              <label for="addressInput">Property address</label>
+              <label for="addressInput">Property Address</label>
               <input
                 id="addressInput"
                 type="text"
@@ -41,11 +41,11 @@
             <button id="addressSearchBtn" type="button">Locate</button>
           </div>
 
-          <div id="mapContainer" class="map-wrap" hidden>
+          <div id="mapContainer" hidden>
             <div id="map"></div>
             <div class="toolbar" role="toolbar" aria-label="Drawing controls">
-              <button id="drawBtn" type="button">Pause Draw</button>
-              <button id="removeLastBtn" type="button" class="secondary">Remove Last</button>
+              <button id="drawBtn" type="button">Pause</button>
+              <button id="removeLastBtn" type="button" class="secondary">Remove Last Segment</button>
               <button id="clearAllBtn" type="button" class="danger">Clear All</button>
             </div>
           </div>
@@ -56,23 +56,23 @@
             <p class="muted">Map unavailable. Enter total feet manually.</p>
           </div>
 
-          <p class="muted" id="mapHint">
-            Draw mode starts active. Double click to close each segment. Drag vertices to edit live.
+          <p id="mapHint" class="muted">
+            Click to place points, drag points to edit, double click to finish one segment.
           </p>
         </section>
 
-        <aside class="card estimate-panel" id="estimatePanel">
+        <aside class="card estimate-panel">
           <h2>Estimate</h2>
 
-          <label for="fenceType">Fence type</label>
+          <label for="fenceType">Fence Type</label>
           <select id="fenceType"></select>
 
           <div class="addons-grid">
-            <label for="walkGateQty">Walk gate qty</label>
-            <input id="walkGateQty" type="number" min="0" step="1" value="0" />
+            <label for="walkGateQty">Walk Gate Qty</label>
+            <select id="walkGateQty"></select>
 
-            <label for="doubleGateQty">Double gate qty</label>
-            <input id="doubleGateQty" type="number" min="0" step="1" value="0" />
+            <label for="doubleGateQty">Double Gate Qty</label>
+            <select id="doubleGateQty"></select>
 
             <label class="checkbox-row" for="removeOldFence">
               <input id="removeOldFence" type="checkbox" />
@@ -90,10 +90,13 @@
             <p id="estimatedPrice" class="metric">$0 - $0</p>
           </div>
 
-          <div class="breakdown" id="estimateBreakdown"></div>
+          <div id="estimateBreakdown" class="breakdown"></div>
+
+          <button id="leadToggleBtn" type="button" class="lead-toggle">Get Exact Quote</button>
 
           <form id="leadForm" class="lead-form" novalidate>
             <h3>Get Exact Quote</h3>
+
             <label for="customerName">Full Name</label>
             <input id="customerName" name="customerName" type="text" required />
 
@@ -114,6 +117,8 @@
       </div>
     </main>
 
-    <script src="/widget.js" defer></script>
+    <button id="mobileLeadCta" type="button" class="mobile-lead-cta">Get Exact Quote</button>
+
+    <script src="/widget.js" data-client="demo" defer></script>
   </body>
 </html>

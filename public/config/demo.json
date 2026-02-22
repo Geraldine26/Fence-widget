@@ -1,5 +1,7 @@
 {
+  "client_key": "demo",
   "company_name": "Demo Fence Co.",
+  "tagline": "Preliminary estimate. Final onsite quote may vary.",
   "primary_color": "#1f7a8c",
   "logo_url": "",
   "disclaimer": "Preliminary estimate. Final onsite quote may vary.",
@@ -8,11 +10,16 @@
     "enabled": true,
     "google_maps_api_key": "AIzaSyDVB2QPW7h3dsXgx5c6AlBu6MRRZnuonBM",
     "default_center": { "lat": 40.7608, "lng": -111.8910 },
-    "default_zoom": 18
+    "default_zoom": 19
   },
-  "pricing_per_ft": {
-    "wood": { "low": 35, "high": 41 },
-    "vinyl": { "low": 42, "high": 49 },
-    "chainlink": { "low": 24, "high": 28 }
+  "pricing": {
+    "wood": { "price_per_ft_low": 35, "price_per_ft_high": 41 },
+    "vinyl": { "price_per_ft_low": 42, "price_per_ft_high": 49 },
+    "chainlink": { "price_per_ft_low": 24, "price_per_ft_high": 28 }
+  },
+  "add_ons": {
+    "walk_gate": { "low": 250, "high": 350 },
+    "double_gate": { "low": 600, "high": 850 },
+    "remove_old_fence_per_ft": { "low": 4, "high": 8 }
   }
 }
