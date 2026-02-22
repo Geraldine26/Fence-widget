@@ -7,13 +7,13 @@
     config: null,
     polylines: [],
     map: null,
-    drawingManager: null,
     drawMode: false,
-    editMode: false,
+    editMode: true,
     totalFeet: 0,
     hasWarning: false,
     geocoder: null,
     addressMarker: null,
+    activeDraft: null,
   };
 
   const refs = {
@@ -25,7 +25,6 @@
     manualFeetWrap: document.getElementById("manualFeetWrap"),
     manualFeetInput: document.getElementById("manualFeetInput"),
     drawBtn: document.getElementById("drawBtn"),
-    editBtn: document.getElementById("editBtn"),
     resetBtn: document.getElementById("resetBtn"),
     addressInput: document.getElementById("addressInput"),
     addressSearchBtn: document.getElementById("addressSearchBtn"),
@@ -156,32 +155,24 @@
     });
 
     refs.drawBtn.addEventListener("click", () => {
-      if (!state.drawingManager) {
+      if (!state.map) {
         return;
       }
       state.drawMode = !state.drawMode;
-      state.drawingManager.setDrawingMode(
-        state.drawMode ? google.maps.drawing.OverlayType.POLYLINE : null
-      );
       refs.drawBtn.classList.toggle("active", state.drawMode);
-    });
-
-    refs.editBtn.addEventListener("click", () => {
-      state.editMode = !state.editMode;
-      state.polylines.forEach((line) => line.setEditable(state.editMode));
-      refs.editBtn.classList.toggle("active", state.editMode);
+      refs.drawBtn.textContent = state.drawMode ? "Pause Draw" : "Resume Draw";
     });
 
     refs.resetBtn.addEventListener("click", () => {
       state.polylines.forEach((line) => line.setMap(null));
       state.polylines = [];
-      state.editMode = false;
-      state.drawMode = false;
-      refs.editBtn.classList.remove("active");
-      refs.drawBtn.classList.remove("active");
-      if (state.drawingManager) {
-        state.drawingManager.setDrawingMode(null);
+      if (state.activeDraft) {
+        state.activeDraft.setMap(null);
+        state.activeDraft = null;
       }
+      state.drawMode = true;
+      refs.drawBtn.classList.add("active");
+      refs.drawBtn.textContent = "Pause Draw";
       recomputeAndRender();
     });
   }
@@ -238,7 +229,7 @@
   }
 
   function loadGoogleMapsApi(apiKey) {
-    if (window.google && window.google.maps && window.google.maps.drawing) {
+    if (window.google && window.google.maps && window.google.maps.geometry) {
       return Promise.resolve();
     }
 
@@ -253,7 +244,7 @@
       const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
         apiKey
-      )}&libraries=drawing,geometry,places`;
+      )}&libraries=geometry,places`;
       script.async = true;
       script.defer = true;
       script.dataset.googleMapsLoader = "true";
@@ -270,33 +261,30 @@
     state.map = new google.maps.Map(document.getElementById("map"), {
       center,
       zoom,
-      mapTypeControl: false,
+      mapTypeId: google.maps.MapTypeId.HYBRID,
+      mapTypeControl: true,
       streetViewControl: false,
       fullscreenControl: true,
+      disableDoubleClickZoom: true,
     });
     state.geocoder = new google.maps.Geocoder();
     setupAddressAutocomplete();
+    state.drawMode = true;
+    refs.drawBtn.classList.add("active");
+    refs.drawBtn.textContent = "Pause Draw";
 
-    state.drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: null,
-      drawingControl: false,
-      polylineOptions: {
-        strokeColor: state.config.primary_color || "#1f7a8c",
-        strokeOpacity: 0.95,
-        strokeWeight: 4,
-        editable: false,
-      },
-    });
-    state.drawingManager.setMap(state.map);
-
-    google.maps.event.addListener(state.drawingManager, "polylinecomplete", (polyline) => {
-      polyline.setEditable(state.editMode);
-      wirePolylineEvents(polyline);
-      state.polylines.push(polyline);
-      if (state.drawMode) {
-        state.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE);
+    state.map.addListener("click", (event) => {
+      if (!state.drawMode) {
+        return;
       }
-      recomputeAndRender();
+      addPointToDraft(event.latLng);
+    });
+
+    state.map.addListener("dblclick", () => {
+      if (!state.drawMode) {
+        return;
+      }
+      finalizeDraftPolyline();
     });
   }
 
@@ -312,7 +300,11 @@
       if (!place || !place.geometry || !place.geometry.location) {
         return;
       }
-      focusMapOnLocation(place.geometry.location, place.formatted_address || refs.addressInput.value);
+      focusMapOnLocation(
+        place.geometry.location,
+        place.formatted_address || refs.addressInput.value,
+        place.geometry.viewport
+      );
     });
   }
 
@@ -329,7 +321,7 @@
     }
 
     setStatus("Locating address...", false);
-    state.geocoder.geocode({ address }, (results, status) => {
+    state.geocoder.geocode({ address, region: "us" }, (results, status) => {
       if (status !== "OK" || !results || !results[0] || !results[0].geometry) {
         setStatus("Address not found. Please refine the address.", true);
         return;
@@ -337,14 +329,20 @@
       const location = results[0].geometry.location;
       const formatted = results[0].formatted_address || address;
       refs.addressInput.value = formatted;
-      focusMapOnLocation(location, formatted);
+      focusMapOnLocation(location, formatted, results[0].geometry.viewport);
       setStatus("Address located. Draw fence lines on the property.", false);
     });
   }
 
-  function focusMapOnLocation(location, title) {
-    state.map.panTo(location);
-    state.map.setZoom(20);
+  function focusMapOnLocation(location, title, viewport) {
+    if (viewport) {
+      state.map.fitBounds(viewport);
+      const z = state.map.getZoom() || 20;
+      state.map.setZoom(Math.max(z, 20));
+    } else {
+      state.map.panTo(location);
+      state.map.setZoom(21);
+    }
     if (state.addressMarker) {
       state.addressMarker.setMap(null);
     }
@@ -353,6 +351,39 @@
       position: location,
       title: sanitizeText(title || "Property location"),
     });
+  }
+
+  function addPointToDraft(latLng) {
+    if (!state.activeDraft) {
+      state.activeDraft = new google.maps.Polyline({
+        map: state.map,
+        path: [],
+        editable: true,
+        geodesic: true,
+        strokeColor: state.config.primary_color || "#1f7a8c",
+        strokeOpacity: 0.95,
+        strokeWeight: 4,
+      });
+      wirePolylineEvents(state.activeDraft);
+    }
+
+    state.activeDraft.getPath().push(latLng);
+    recomputeAndRender();
+  }
+
+  function finalizeDraftPolyline() {
+    if (!state.activeDraft) {
+      return;
+    }
+
+    const path = state.activeDraft.getPath();
+    if (path.getLength() < 2) {
+      state.activeDraft.setMap(null);
+    } else {
+      state.polylines.push(state.activeDraft);
+    }
+    state.activeDraft = null;
+    recomputeAndRender();
   }
 
   function wirePolylineEvents(polyline) {
@@ -393,6 +424,9 @@
       }
       totalMeters += google.maps.geometry.spherical.computeLength(path);
     });
+    if (state.activeDraft && state.activeDraft.getPath().getLength() >= 2) {
+      totalMeters += google.maps.geometry.spherical.computeLength(state.activeDraft.getPath());
+    }
 
     return Number((totalMeters * FT_PER_METER).toFixed(1));
   }
