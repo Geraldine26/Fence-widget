@@ -6,7 +6,7 @@
   "webhook_url": "https://example.com/webhook/greenlawn",
   "maps": {
     "enabled": true,
-    "google_maps_api_key": "",
+    "google_maps_api_key": "AIzaSyDVB2QPW7h3dsXgx5c6AlBu6MRRZnuonBM",
     "default_center": { "lat": 40.6405, "lng": -111.8903 },
     "default_zoom": 18
   },
