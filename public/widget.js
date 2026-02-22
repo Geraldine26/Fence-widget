@@ -517,6 +517,13 @@
     setStatus("Drawing... feet updating live.", false);
   }
 
+  function resetEstimateState() {
+    state.totalFeet = 0;
+    state.estimateMin = 0;
+    state.estimateMax = 0;
+    recomputeAndRender();
+  }
+
   function clearAllSegments() {
     if (state.activeSegment) {
       state.activeSegment.setMap(null);
@@ -531,7 +538,7 @@
     refs.removeOldFence.checked = false;
     state.optionsConfirmed = false;
 
-    recomputeAndRender();
+    resetEstimateState();
     if (state.addressReady) {
       setStatus("Ready to draw.", false);
     } else {
@@ -613,7 +620,7 @@
     const doubleQty = toPositiveInt(refs.doubleGateQty.value);
     const removeOld = refs.removeOldFence.checked;
 
-    if (segmentsCount === 0 || feet === 0) {
+    if (segmentsCount <= 0 || feet <= 0) {
       return {
         fenceType,
         feet: 0,
