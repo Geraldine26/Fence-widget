@@ -619,7 +619,7 @@
       refs.leadForm.classList.remove("is-collapsed");
       refs.leadToggleBtn.setAttribute("aria-expanded", "true");
       document.body.classList.remove("mobile-step-draw", "mobile-step-estimate", "form-open");
-      refs.mobileLeadCta.textContent = "Continue";
+      refs.mobileLeadCta.textContent = "Get Exact Quote";
       return;
     }
 
@@ -630,7 +630,7 @@
       refs.leadToggleBtn.setAttribute("aria-expanded", "false");
       document.body.classList.remove("mobile-step-estimate", "form-open");
       document.body.classList.add("mobile-step-draw");
-      refs.mobileLeadCta.textContent = "Continue";
+      refs.mobileLeadCta.textContent = "Get Exact Quote";
       return;
     }
 
@@ -638,7 +638,7 @@
 
     if (state.mobileStep === "estimate") {
       document.body.classList.remove("mobile-step-draw");
-      document.body.classList.add("mobile-step-estimate", "form-open");
+      document.body.classList.add("mobile-step-estimate");
       refs.leadForm.classList.remove("is-collapsed");
       refs.leadToggleBtn.setAttribute("aria-expanded", "true");
       refs.mobileLeadCta.textContent = "Send My Quote Request";
@@ -647,7 +647,7 @@
       document.body.classList.add("mobile-step-draw");
       refs.leadForm.classList.add("is-collapsed");
       refs.leadToggleBtn.setAttribute("aria-expanded", "false");
-      refs.mobileLeadCta.textContent = "Continue";
+      refs.mobileLeadCta.textContent = "Get Exact Quote";
     }
   }
 
@@ -667,10 +667,11 @@
       state.mobileStep = "estimate";
       const calc = computeEstimate();
       applyMobileGuidedFlow(calc);
+      refs.estimatePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => refs.customerName.focus(), 280);
       return;
     }
 
-    openLeadForm();
     refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
     setTimeout(() => refs.customerName.focus(), 250);
   }

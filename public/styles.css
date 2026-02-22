@@ -212,6 +212,10 @@ input {
   margin-top: 16px;
   display: grid;
   gap: 8px;
+  overflow: hidden;
+  max-height: 1200px;
+  opacity: 1;
+  transition: max-height 0.28s ease, opacity 0.2s ease, margin-top 0.2s ease;
 }
 
 .lead-form h3 {
@@ -219,7 +223,10 @@ input {
 }
 
 .lead-form.is-collapsed {
-  display: none;
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+  pointer-events: none;
 }
 
 #websiteTrap {
@@ -313,10 +320,6 @@ input {
 
   body.form-open {
     padding-bottom: 0;
-  }
-
-  body.form-open .mobile-summary-bar {
-    display: none;
   }
 }
 
