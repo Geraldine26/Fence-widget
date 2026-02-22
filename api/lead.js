@@ -49,6 +49,15 @@ module.exports = async function handler(req, res) {
     if (!apiKey || !fromEmail) {
       return sendJson(res, 500, { ok: false, error: "Email service is not configured." });
     }
+    if (!isByteStringValue(apiKey)) {
+      return sendJson(res, 500, {
+        ok: false,
+        error: "SENDGRID_API_KEY has invalid characters. Re-paste the raw key from SendGrid.",
+      });
+    }
+    if (!apiKey.startsWith("SG.")) {
+      return sendJson(res, 500, { ok: false, error: "SENDGRID_API_KEY format looks invalid." });
+    }
     if (!isValidEmail(fromEmail)) {
       return sendJson(res, 500, { ok: false, error: "FROM_EMAIL is invalid." });
     }
@@ -388,6 +397,14 @@ function toNonNegativeInt(value) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function isByteStringValue(value) {
+  const s = String(value == null ? "" : value);
+  for (let i = 0; i < s.length; i += 1) {
+    if (s.charCodeAt(i) > 255) return false;
+  }
+  return true;
 }
 
 function formatFeet(value) {
