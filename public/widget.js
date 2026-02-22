@@ -246,6 +246,14 @@
     return window.matchMedia("(max-width: 1000px)").matches;
   }
 
+  function isPhoneViewport() {
+    return window.matchMedia("(max-width: 768px)").matches;
+  }
+
+  function isDesktopViewport() {
+    return window.matchMedia("(min-width: 1024px)").matches;
+  }
+
   function updateStepperValue(input, delta) {
     const min = Number(input.min || 0);
     const max = Number(input.max || 10);
@@ -420,7 +428,12 @@
   }
 
   function focusProperty(location, viewport, title) {
-    if (viewport) {
+    if (isDesktopViewport()) {
+      if (!fitMapToSegmentsDesktop()) {
+        state.map.panTo(location);
+        state.map.setZoom(19);
+      }
+    } else if (viewport) {
       state.map.fitBounds(viewport);
       const z = state.map.getZoom() || 20;
       state.map.setZoom(Math.max(z, 20));
@@ -436,6 +449,42 @@
       position: location,
       title: sanitizeText(title || "Property"),
     });
+  }
+
+  function fitMapToSegmentsDesktop() {
+    if (!isDesktopViewport() || !state.map || !window.google?.maps?.LatLngBounds) {
+      return false;
+    }
+
+    const bounds = new google.maps.LatLngBounds();
+    let hasPoints = false;
+
+    const polylines = [...state.segments];
+    if (state.activeSegment && state.activeSegment.getPath().getLength() >= 2) {
+      polylines.push(state.activeSegment);
+    }
+
+    polylines.forEach((seg) => {
+      const path = seg.getPath();
+      if (!path || path.getLength() < 2) {
+        return;
+      }
+      path.forEach((latLng) => {
+        bounds.extend(latLng);
+        hasPoints = true;
+      });
+    });
+
+    if (!hasPoints) {
+      return false;
+    }
+
+    state.map.fitBounds(bounds, 40);
+    const z = state.map.getZoom() || 19;
+    if (z < 17) {
+      state.map.setZoom(17);
+    }
+    return true;
   }
 
   function addPoint(latLng) {
@@ -688,7 +737,11 @@
       document.body.classList.add("mobile-step-form");
       refs.leadForm.classList.remove("is-collapsed");
       refs.leadToggleBtn.setAttribute("aria-expanded", "true");
-      refs.mobileLeadCta.textContent = "Send My Quote Request";
+      if (isPhoneViewport()) {
+        refs.mobileSummaryBar.classList.remove("is-visible");
+      } else {
+        refs.mobileLeadCta.textContent = "Send My Quote Request";
+      }
       return;
     }
 
@@ -851,12 +904,18 @@
     refs.leadForm.classList.remove("is-collapsed");
     refs.leadToggleBtn.setAttribute("aria-expanded", "true");
     document.body.classList.add("form-open");
+    if (isPhoneViewport()) {
+      refs.mobileSummaryBar.classList.remove("is-visible");
+    }
   }
 
   function closeLeadForm() {
     refs.leadForm.classList.add("is-collapsed");
     refs.leadToggleBtn.setAttribute("aria-expanded", "false");
     document.body.classList.remove("form-open");
+    if (isPhoneViewport() && state.totalFeet > 0) {
+      refs.mobileSummaryBar.classList.add("is-visible");
+    }
   }
 
   function setStatus(message, isWarning) {

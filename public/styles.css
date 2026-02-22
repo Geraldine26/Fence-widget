@@ -283,7 +283,7 @@ input {
 }
 
 .mobile-summary-bar.is-visible {
-  display: flex;
+  display: none;
 }
 
 #mobileSummaryText {
@@ -297,6 +297,38 @@ input {
   white-space: nowrap;
   padding: 9px 12px;
   font-size: 13px;
+}
+
+@media (min-width: 1024px) {
+  .widget {
+    max-width: 1180px;
+    margin: 12px auto 24px;
+    padding: 14px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1.36fr) minmax(0, 0.84fr);
+    gap: 12px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .estimate-panel {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    padding-right: 12px;
+  }
+
+  .estimate-panel .lead-form {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #dde7ec;
+  }
 }
 
 @media (max-width: 1000px) {
@@ -380,5 +412,11 @@ input {
 
   .layout {
     gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-summary-bar.is-visible {
+    display: flex;
   }
 }
