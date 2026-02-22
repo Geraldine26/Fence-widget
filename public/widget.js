@@ -12,6 +12,8 @@
     editMode: false,
     totalFeet: 0,
     hasWarning: false,
+    geocoder: null,
+    addressMarker: null,
   };
 
   const refs = {
@@ -25,6 +27,8 @@
     drawBtn: document.getElementById("drawBtn"),
     editBtn: document.getElementById("editBtn"),
     resetBtn: document.getElementById("resetBtn"),
+    addressInput: document.getElementById("addressInput"),
+    addressSearchBtn: document.getElementById("addressSearchBtn"),
     fenceType: document.getElementById("fenceType"),
     totalFeet: document.getElementById("totalFeet"),
     estimatedPrice: document.getElementById("estimatedPrice"),
@@ -56,17 +60,21 @@
 
   function parseClientFromUrl() {
     const raw = new URLSearchParams(window.location.search).get("client") || DEFAULT_CLIENT;
-    const cleaned = raw.trim().toLowerCase();
-    if (!/^[a-z0-9_-]+$/.test(cleaned)) {
+    const cleaned = raw.trim().toLowerCase().replace(/\s+/g, "");
+    if (!cleaned) {
       return DEFAULT_CLIENT;
     }
-    return cleaned;
+    return cleaned.replace(/[^a-z0-9_-]/g, "");
   }
 
   async function loadClientConfig(clientKey) {
-    const candidate = await fetchJson(`/config/${clientKey}.json`);
-    if (candidate) {
-      return candidate;
+    const aliases = uniqueClientAliases(clientKey);
+    for (const alias of aliases) {
+      const candidate = await fetchJson(`/config/${alias}.json`);
+      if (candidate) {
+        state.clientKey = alias;
+        return candidate;
+      }
     }
 
     if (clientKey !== DEFAULT_CLIENT) {
@@ -92,6 +100,12 @@
       console.warn("Failed to fetch JSON", path, err);
       return null;
     }
+  }
+
+  function uniqueClientAliases(clientKey) {
+    const trimmed = String(clientKey || "").trim().toLowerCase();
+    const collapsed = trimmed.replace(/[-_]/g, "");
+    return [...new Set([trimmed, collapsed])];
   }
 
   function applyBranding(config) {
@@ -133,6 +147,13 @@
   function wireStaticEvents() {
     refs.manualFeetInput.addEventListener("input", recomputeAndRender);
     refs.fenceType.addEventListener("change", recomputeAndRender);
+    refs.addressSearchBtn.addEventListener("click", geocodeAddressFromInput);
+    refs.addressInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        geocodeAddressFromInput();
+      }
+    });
 
     refs.drawBtn.addEventListener("click", () => {
       if (!state.drawingManager) {
@@ -171,9 +192,7 @@
       return false;
     }
 
-    const apiKey =
-      (window.FENCE_GOOGLE_MAPS_API_KEY || "").trim() ||
-      (mapsConfig.google_maps_api_key || "").trim();
+    const apiKey = await resolveMapsApiKey(mapsConfig);
 
     if (!apiKey) {
       setStatus("Map disabled: missing Google Maps API key. Using manual feet mode.", true);
@@ -187,10 +206,30 @@
       refs.manualFeetWrap.hidden = true;
       return true;
     } catch (err) {
-      setStatus("Google Maps failed to load. Using manual feet mode.", true);
+      const detail = err && err.message ? ` (${err.message})` : "";
+      setStatus(`Google Maps failed to load. Using manual feet mode.${detail}`, true);
       console.error(err);
       return false;
     }
+  }
+
+  async function resolveMapsApiKey(mapsConfig) {
+    const fromWindow = String(window.FENCE_GOOGLE_MAPS_API_KEY || "").trim();
+    const fromQuery = String(new URLSearchParams(window.location.search).get("gmapsKey") || "").trim();
+    const fromClientConfig = String(mapsConfig.google_maps_api_key || "").trim();
+    if (fromWindow) {
+      return fromWindow;
+    }
+    if (fromQuery) {
+      return fromQuery;
+    }
+    if (fromClientConfig) {
+      return fromClientConfig;
+    }
+
+    // Optional fallback so all tenants can work while sharing one key.
+    const demoConfig = await fetchJson(`/config/${DEFAULT_CLIENT}.json`);
+    return String(demoConfig?.maps?.google_maps_api_key || "").trim();
   }
 
   function enableManualFeetMode() {
@@ -214,7 +253,7 @@
       const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
         apiKey
-      )}&libraries=drawing,geometry`;
+      )}&libraries=drawing,geometry,places`;
       script.async = true;
       script.defer = true;
       script.dataset.googleMapsLoader = "true";
@@ -235,6 +274,8 @@
       streetViewControl: false,
       fullscreenControl: true,
     });
+    state.geocoder = new google.maps.Geocoder();
+    setupAddressAutocomplete();
 
     state.drawingManager = new google.maps.drawing.DrawingManager({
       drawingMode: null,
@@ -252,10 +293,65 @@
       polyline.setEditable(state.editMode);
       wirePolylineEvents(polyline);
       state.polylines.push(polyline);
-      state.drawingManager.setDrawingMode(null);
-      state.drawMode = false;
-      refs.drawBtn.classList.remove("active");
+      if (state.drawMode) {
+        state.drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE);
+      }
       recomputeAndRender();
+    });
+  }
+
+  function setupAddressAutocomplete() {
+    if (!google.maps.places || !refs.addressInput) {
+      return;
+    }
+    const autocomplete = new google.maps.places.Autocomplete(refs.addressInput, {
+      fields: ["formatted_address", "geometry"],
+    });
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      if (!place || !place.geometry || !place.geometry.location) {
+        return;
+      }
+      focusMapOnLocation(place.geometry.location, place.formatted_address || refs.addressInput.value);
+    });
+  }
+
+  function geocodeAddressFromInput() {
+    if (!state.map || !state.geocoder) {
+      setStatus("Map is unavailable, address lookup disabled.", true);
+      return;
+    }
+
+    const address = String(refs.addressInput.value || "").trim();
+    if (!address) {
+      setStatus("Please enter an address to locate the property.", true);
+      return;
+    }
+
+    setStatus("Locating address...", false);
+    state.geocoder.geocode({ address }, (results, status) => {
+      if (status !== "OK" || !results || !results[0] || !results[0].geometry) {
+        setStatus("Address not found. Please refine the address.", true);
+        return;
+      }
+      const location = results[0].geometry.location;
+      const formatted = results[0].formatted_address || address;
+      refs.addressInput.value = formatted;
+      focusMapOnLocation(location, formatted);
+      setStatus("Address located. Draw fence lines on the property.", false);
+    });
+  }
+
+  function focusMapOnLocation(location, title) {
+    state.map.panTo(location);
+    state.map.setZoom(20);
+    if (state.addressMarker) {
+      state.addressMarker.setMap(null);
+    }
+    state.addressMarker = new google.maps.Marker({
+      map: state.map,
+      position: location,
+      title: sanitizeText(title || "Property location"),
     });
   }
 
@@ -369,4 +465,3 @@
     }).format(value || 0);
   }
 })();
-
