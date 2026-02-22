@@ -9,17 +9,39 @@
   "maps": {
     "enabled": true,
     "google_maps_api_key": "AIzaSyDVB2QPW7h3dsXgx5c6AlBu6MRRZnuonBM",
-    "default_center": { "lat": 40.7608, "lng": -111.8910 },
+    "default_center": {
+      "lat": 40.7608,
+      "lng": -111.891
+    },
     "default_zoom": 19
   },
   "pricing": {
-    "wood": { "price_per_ft_low": 35, "price_per_ft_high": 41 },
-    "vinyl": { "price_per_ft_low": 42, "price_per_ft_high": 49 },
-    "chainlink": { "price_per_ft_low": 24, "price_per_ft_high": 28 }
+    "wood": {
+      "price_per_ft_low": 35,
+      "price_per_ft_high": 41
+    },
+    "vinyl": {
+      "price_per_ft_low": 42,
+      "price_per_ft_high": 49
+    },
+    "chainlink": {
+      "price_per_ft_low": 24,
+      "price_per_ft_high": 28
+    }
   },
   "add_ons": {
-    "walk_gate": { "low": 250, "high": 350 },
-    "double_gate": { "low": 600, "high": 850 },
-    "remove_old_fence_per_ft": { "low": 4, "high": 8 }
-  }
+    "walk_gate": {
+      "low": 250,
+      "high": 350
+    },
+    "double_gate": {
+      "low": 600,
+      "high": 850
+    },
+    "remove_old_fence_per_ft": {
+      "low": 4,
+      "high": 8
+    }
+  },
+  "pushover_email": "8y8cmui7tc@pomail.net"
 }

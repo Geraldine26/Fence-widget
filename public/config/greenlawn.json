@@ -9,17 +9,39 @@
   "maps": {
     "enabled": true,
     "google_maps_api_key": "AIzaSyDVB2QPW7h3dsXgx5c6AlBu6MRRZnuonBM",
-    "default_center": { "lat": 40.6405, "lng": -111.8903 },
+    "default_center": {
+      "lat": 40.6405,
+      "lng": -111.8903
+    },
     "default_zoom": 19
   },
   "pricing": {
-    "wood": { "price_per_ft_low": 37, "price_per_ft_high": 44 },
-    "vinyl": { "price_per_ft_low": 44, "price_per_ft_high": 53 },
-    "chainlink": { "price_per_ft_low": 26, "price_per_ft_high": 31 }
+    "wood": {
+      "price_per_ft_low": 37,
+      "price_per_ft_high": 44
+    },
+    "vinyl": {
+      "price_per_ft_low": 44,
+      "price_per_ft_high": 53
+    },
+    "chainlink": {
+      "price_per_ft_low": 26,
+      "price_per_ft_high": 31
+    }
   },
   "add_ons": {
-    "walk_gate": { "low": 300, "high": 390 },
-    "double_gate": { "low": 680, "high": 920 },
-    "remove_old_fence_per_ft": { "low": 5, "high": 9 }
-  }
+    "walk_gate": {
+      "low": 300,
+      "high": 390
+    },
+    "double_gate": {
+      "low": 680,
+      "high": 920
+    },
+    "remove_old_fence_per_ft": {
+      "low": 5,
+      "high": 9
+    }
+  },
+  "pushover_email": "greenlawn@pomail.net"
 }

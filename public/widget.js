@@ -808,69 +808,81 @@
       return;
     }
 
-    const name = String(refs.customerName.value || "").trim();
+    const fullName = String(refs.customerName.value || "").trim();
     const phone = String(refs.customerPhone.value || "").trim();
     const email = String(refs.customerEmail.value || "").trim();
     const address = String(refs.customerAddress.value || refs.addressInput.value || "").trim();
+    const pushoverEmail = String(state.config.pushover_email || "").trim();
 
-    if (!name || !phone || !isValidEmail(email) || !address) {
+    if (!fullName || !phone || !isValidEmail(email) || !address) {
       setStatus("Please complete all fields with a valid email.", true);
       return;
     }
 
     const calc = computeEstimate();
+    if (calc.feet <= 0 || calc.segmentsCount <= 0) {
+      setStatus("Measure your fence before sending a quote request.", true);
+      return;
+    }
+
+    if (!isValidEmail(pushoverEmail)) {
+      setStatus("Owner email is not configured for this client.", true);
+      return;
+    }
+
     const payload = {
-      client_key: state.clientKey,
-      company_name: state.config.company_name || "",
-      fence_type: calc.fenceType,
-      walk_gate_qty: calc.walkQty,
-      double_gate_qty: calc.doubleQty,
-      remove_old_fence: calc.removeOld,
-      total_linear_feet: Number(calc.feet.toFixed(1)),
-      estimated_min: Math.round(calc.estimatedMin),
-      estimated_max: Math.round(calc.estimatedMax),
-      breakdown: {
-        material_min: Math.round(calc.breakdown.materialMin),
-        material_max: Math.round(calc.breakdown.materialMax),
-        walk_gate_min: Math.round(calc.breakdown.walkMin),
-        walk_gate_max: Math.round(calc.breakdown.walkMax),
-        double_gate_min: Math.round(calc.breakdown.doubleMin),
-        double_gate_max: Math.round(calc.breakdown.doubleMax),
-        removal_min: Math.round(calc.breakdown.removalMin),
-        removal_max: Math.round(calc.breakdown.removalMax),
-        segments_count: calc.segmentsCount,
-      },
-      property_address: address,
-      name,
+      client: state.clientKey,
+      companyName: state.config.company_name || "",
+      pushover_email: pushoverEmail,
+      address,
+      fenceType: calc.fenceType,
+      walkGatesQty: calc.walkQty,
+      doubleGatesQty: calc.doubleQty,
+      removeOldFence: calc.removeOld,
+      totalLinearFeet: Number(calc.feet.toFixed(1)),
+      segmentsCount: calc.segmentsCount,
+      estimatedMin: Math.round(calc.estimatedMin),
+      estimatedMax: Math.round(calc.estimatedMax),
+      segments: buildCoordinatesArray(),
+      fullName,
       phone,
       email,
-      drawing_coordinates_array: buildCoordinatesArray(),
-      submitted_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      page_url: window.location.href,
+      website: String(refs.websiteTrap.value || "").trim(),
     };
 
     refs.submitLeadBtn.disabled = true;
     refs.submitLeadBtn.textContent = "Sending...";
+    refs.quoteSuccess.hidden = true;
 
     try {
-      const webhook = String(state.config.webhook_url || "").trim();
-      if (webhook && !/example\.com/.test(webhook)) {
-        await fetch(webhook, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        console.log("Lead payload", payload);
+      const response = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      let result = { ok: false };
+      try {
+        result = await response.json();
+      } catch {
+        result = { ok: false };
+      }
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Lead request failed.");
       }
 
       refs.leadForm.reset();
       refs.customerAddress.value = refs.addressInput.value;
       refs.quoteSuccess.hidden = false;
-      setStatus("Lead submitted successfully.", false);
+      refs.quoteSuccess.textContent = "Thanks! We’ll confirm details and send a final quote.";
+      setStatus("Thanks! We’ll confirm details and send a final quote.", false);
       closeQuoteOverlay();
     } catch (err) {
       console.error(err);
-      setStatus("Failed to submit lead. Try again.", true);
+      setStatus(err.message || "Failed to submit lead. Try again.", true);
     } finally {
       refs.submitLeadBtn.disabled = false;
       refs.submitLeadBtn.textContent = "Send Quote Request";
