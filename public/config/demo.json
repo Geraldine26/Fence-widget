@@ -1,15 +1,18 @@
 {
   "company_name": "Demo Fence Co.",
-  "primary_color": "#16a34a",
+  "primary_color": "#1f7a8c",
   "logo_url": "",
-  "webhook_url": "https://hook.make.com/REPLACE_ME",
-  "pricing": {
-    "wood": { "per_ft": 32, "variance": 0.12 },
-    "vinyl": { "per_ft": 38, "variance": 0.15 },
-    "chainlink": { "per_ft": 22, "variance": 0.08 },
-    "iron": { "per_ft": 55, "variance": 0.18 }
+  "disclaimer": "Preliminary estimate. Final onsite quote may vary.",
+  "webhook_url": "https://example.com/webhook/demo",
+  "maps": {
+    "enabled": true,
+    "google_maps_api_key": "",
+    "default_center": { "lat": 40.7608, "lng": -111.8910 },
+    "default_zoom": 18
   },
-  "gates": { "walk_gate": 350, "drive_gate": 800 },
-  "remove_old_fence_fee_per_ft": 6,
-  "disclaimer": "This is a preliminary estimate. Final pricing may vary after an on-site inspection."
+  "pricing_per_ft": {
+    "wood": { "low": 35, "high": 41 },
+    "vinyl": { "low": 42, "high": 49 },
+    "chainlink": { "low": 24, "high": 28 }
+  }
 }
