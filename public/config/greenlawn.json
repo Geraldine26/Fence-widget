@@ -1,4 +1,5 @@
 {
+  "client_key": "greenlawn",
   "company_name": "Green Lawn Utah",
   "primary_color": "#16a34a",
   "logo_url": "",
@@ -8,11 +9,16 @@
     "enabled": true,
     "google_maps_api_key": "AIzaSyDVB2QPW7h3dsXgx5c6AlBu6MRRZnuonBM",
     "default_center": { "lat": 40.6405, "lng": -111.8903 },
-    "default_zoom": 18
+    "default_zoom": 19
   },
-  "pricing_per_ft": {
-    "wood": { "low": 37, "high": 44 },
-    "vinyl": { "low": 44, "high": 53 },
-    "chainlink": { "low": 26, "high": 31 }
+  "pricing": {
+    "wood": { "price_per_ft_low": 37, "price_per_ft_high": 44 },
+    "vinyl": { "price_per_ft_low": 44, "price_per_ft_high": 53 },
+    "chainlink": { "price_per_ft_low": 26, "price_per_ft_high": 31 }
+  },
+  "add_ons": {
+    "walk_gate": { "low": 300, "high": 390 },
+    "double_gate": { "low": 680, "high": 920 },
+    "remove_old_fence_per_ft": { "low": 5, "high": 9 }
   }
 }
