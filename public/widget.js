@@ -15,6 +15,7 @@
     estimateMin: 0,
     estimateMax: 0,
     hasWarning: false,
+    mobileStep: "draw", // draw | estimate
   };
 
   const refs = {
@@ -42,9 +43,11 @@
     totalFeet: document.getElementById("totalFeet"),
     estimatedPrice: document.getElementById("estimatedPrice"),
     estimateBreakdown: document.getElementById("estimateBreakdown"),
+    estimatePanel: document.querySelector(".estimate-panel"),
 
     leadToggleBtn: document.getElementById("leadToggleBtn"),
     mobileLeadCta: document.getElementById("mobileLeadCta"),
+    mobileSummaryBar: document.getElementById("mobileSummaryBar"),
     mobileSummaryText: document.getElementById("mobileSummaryText"),
     leadForm: document.getElementById("leadForm"),
     submitLeadBtn: document.getElementById("submitLeadBtn"),
@@ -67,7 +70,6 @@
     applyBranding(state.config);
     setupEstimateInputs();
     wireEvents();
-    setupLeadFormMobileState();
 
     const mapReady = await initMapIfEnabled(state.config);
     if (!mapReady) {
@@ -202,7 +204,7 @@
   function wireEvents() {
     window.addEventListener("resize", () => {
       updateAddressButtonLabel();
-      setupLeadFormMobileState();
+      applyMobileGuidedFlow(computeEstimate());
     });
 
     refs.manualFeetInput.addEventListener("input", recomputeAndRender);
@@ -223,27 +225,13 @@
     refs.clearAllBtn.addEventListener("click", clearAllSegments);
 
     refs.leadToggleBtn.addEventListener("click", toggleLeadForm);
-    refs.mobileLeadCta.addEventListener("click", () => {
-      openLeadForm();
-      refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => refs.customerName.focus(), 250);
-    });
+    refs.mobileLeadCta.addEventListener("click", onMobileSummaryAction);
 
     refs.leadForm.addEventListener("submit", submitLead);
   }
 
-  function setupLeadFormMobileState() {
-    const isMobile = window.matchMedia("(max-width: 1000px)").matches;
-    if (isMobile) {
-      if (!document.body.classList.contains("form-open")) {
-        refs.leadForm.classList.add("is-collapsed");
-        refs.leadToggleBtn.setAttribute("aria-expanded", "false");
-      }
-      return;
-    }
-    refs.leadForm.classList.remove("is-collapsed");
-    refs.leadToggleBtn.setAttribute("aria-expanded", "true");
-    document.body.classList.remove("form-open");
+  function isMobileViewport() {
+    return window.matchMedia("(max-width: 1000px)").matches;
   }
 
   async function initMapIfEnabled(config) {
@@ -361,6 +349,7 @@
       focusProperty(place.geometry.location, place.geometry.viewport, formatted);
       state.addressReady = true;
       setStatus("Address found. Start drawing.", false);
+      applyMobileGuidedFlow(computeEstimate());
     });
   }
 
@@ -388,6 +377,7 @@
       focusProperty(result.geometry.location, result.geometry.viewport, result.formatted_address);
       state.addressReady = true;
       setStatus("Address found. Start drawing.", false);
+      applyMobileGuidedFlow(computeEstimate());
     });
   }
 
@@ -606,7 +596,7 @@
 
     refs.totalFeet.textContent = `${formatNum(calc.feet)} ft`;
     refs.estimatedPrice.textContent = `${formatMoney(calc.estimatedMin)} - ${formatMoney(calc.estimatedMax)}`;
-    refs.mobileSummaryText.textContent = `${formatNum(calc.feet)} ft • ${formatMoney(calc.estimatedMin)}-${formatMoney(
+    refs.mobileSummaryText.textContent = `${formatNum(calc.feet)} ft • ${formatMoney(calc.estimatedMin)}–${formatMoney(
       calc.estimatedMax
     )}`;
 
@@ -619,6 +609,70 @@
     ]
       .map((row) => `<div>${row}</div>`)
       .join("");
+
+    applyMobileGuidedFlow(calc);
+  }
+
+  function applyMobileGuidedFlow(calc) {
+    if (!isMobileViewport()) {
+      refs.mobileSummaryBar.classList.remove("is-visible");
+      refs.leadForm.classList.remove("is-collapsed");
+      refs.leadToggleBtn.setAttribute("aria-expanded", "true");
+      document.body.classList.remove("mobile-step-draw", "mobile-step-estimate", "form-open");
+      refs.mobileLeadCta.textContent = "Continue";
+      return;
+    }
+
+    if (calc.feet <= 0) {
+      state.mobileStep = "draw";
+      refs.mobileSummaryBar.classList.remove("is-visible");
+      refs.leadForm.classList.add("is-collapsed");
+      refs.leadToggleBtn.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("mobile-step-estimate", "form-open");
+      document.body.classList.add("mobile-step-draw");
+      refs.mobileLeadCta.textContent = "Continue";
+      return;
+    }
+
+    refs.mobileSummaryBar.classList.add("is-visible");
+
+    if (state.mobileStep === "estimate") {
+      document.body.classList.remove("mobile-step-draw");
+      document.body.classList.add("mobile-step-estimate", "form-open");
+      refs.leadForm.classList.remove("is-collapsed");
+      refs.leadToggleBtn.setAttribute("aria-expanded", "true");
+      refs.mobileLeadCta.textContent = "Send My Quote Request";
+    } else {
+      document.body.classList.remove("mobile-step-estimate", "form-open");
+      document.body.classList.add("mobile-step-draw");
+      refs.leadForm.classList.add("is-collapsed");
+      refs.leadToggleBtn.setAttribute("aria-expanded", "false");
+      refs.mobileLeadCta.textContent = "Continue";
+    }
+  }
+
+  function onMobileSummaryAction() {
+    if (!isMobileViewport()) {
+      openLeadForm();
+      refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => refs.customerName.focus(), 250);
+      return;
+    }
+
+    if (state.totalFeet <= 0) {
+      return;
+    }
+
+    if (state.mobileStep !== "estimate") {
+      state.mobileStep = "estimate";
+      const calc = computeEstimate();
+      applyMobileGuidedFlow(calc);
+      return;
+    }
+
+    openLeadForm();
+    refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTimeout(() => refs.customerName.focus(), 250);
   }
 
   function buildCoordinatesArray() {

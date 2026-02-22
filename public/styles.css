@@ -251,10 +251,13 @@ input {
   border-radius: 14px;
   padding: 10px;
   box-shadow: 0 14px 30px rgba(10, 25, 35, 0.35);
-  display: none;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.mobile-summary-bar.is-visible {
+  display: flex;
 }
 
 #mobileSummaryText {
@@ -285,15 +288,27 @@ input {
   }
 
   .lead-toggle {
-    display: inline-block;
+    display: none;
   }
 
   .lead-form {
     margin-top: 10px;
   }
 
-  .mobile-summary-bar {
-    display: flex;
+  body.mobile-step-draw .estimate-panel {
+    display: none;
+  }
+
+  body.mobile-step-estimate .estimate-panel {
+    display: block;
+  }
+
+  body.mobile-step-estimate #map {
+    height: 200px;
+  }
+
+  body.mobile-step-estimate .lead-form {
+    display: grid;
   }
 
   body.form-open {
