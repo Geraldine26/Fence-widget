@@ -261,12 +261,14 @@
     state.map = new google.maps.Map(document.getElementById("map"), {
       center,
       zoom,
-      mapTypeId: google.maps.MapTypeId.HYBRID,
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
       mapTypeControl: true,
       streetViewControl: false,
       fullscreenControl: true,
       disableDoubleClickZoom: true,
+      rotateControl: false,
     });
+    state.map.setTilt(0);
     state.geocoder = new google.maps.Geocoder();
     setupAddressAutocomplete();
     state.drawMode = true;
