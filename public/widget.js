@@ -17,6 +17,7 @@
     hasWarning: false,
     mobileStep: "draw", // draw | review | quote-ready | form
     optionsInteracted: false,
+    desktopFormOpen: false,
   };
 
   const refs = {
@@ -243,7 +244,7 @@
   }
 
   function isMobileViewport() {
-    return window.matchMedia("(max-width: 1000px)").matches;
+    return window.matchMedia("(max-width: 768px)").matches;
   }
 
   function isPhoneViewport() {
@@ -251,7 +252,7 @@
   }
 
   function isDesktopViewport() {
-    return window.matchMedia("(min-width: 1024px)").matches;
+    return window.matchMedia("(min-width: 769px)").matches;
   }
 
   function updateStepperValue(input, delta) {
@@ -703,8 +704,8 @@
   function applyMobileGuidedFlow(calc) {
     if (!isMobileViewport()) {
       refs.mobileSummaryBar.classList.remove("is-visible");
-      refs.leadForm.classList.remove("is-collapsed");
-      refs.leadToggleBtn.setAttribute("aria-expanded", "true");
+      refs.leadForm.classList.toggle("is-collapsed", !state.desktopFormOpen);
+      refs.leadToggleBtn.setAttribute("aria-expanded", state.desktopFormOpen ? "true" : "false");
       document.body.classList.remove("mobile-step-draw", "mobile-step-review", "mobile-step-quote-ready", "mobile-step-form", "form-open");
       refs.mobileLeadCta.textContent = "Continue";
       return;
@@ -901,6 +902,15 @@
   }
 
   function toggleLeadForm() {
+    if (!isMobileViewport()) {
+      state.desktopFormOpen = !state.desktopFormOpen;
+      refs.leadForm.classList.toggle("is-collapsed", !state.desktopFormOpen);
+      refs.leadToggleBtn.setAttribute("aria-expanded", state.desktopFormOpen ? "true" : "false");
+      if (state.desktopFormOpen) {
+        setTimeout(() => refs.customerName.focus(), 120);
+      }
+      return;
+    }
     const collapsed = refs.leadForm.classList.contains("is-collapsed");
     if (collapsed) {
       openLeadForm();
@@ -910,6 +920,9 @@
   }
 
   function openLeadForm() {
+    if (!isMobileViewport()) {
+      state.desktopFormOpen = true;
+    }
     refs.leadForm.classList.remove("is-collapsed");
     refs.leadToggleBtn.setAttribute("aria-expanded", "true");
     document.body.classList.add("form-open");
@@ -919,6 +932,9 @@
   }
 
   function closeLeadForm() {
+    if (!isMobileViewport()) {
+      state.desktopFormOpen = false;
+    }
     refs.leadForm.classList.add("is-collapsed");
     refs.leadToggleBtn.setAttribute("aria-expanded", "false");
     document.body.classList.remove("form-open");

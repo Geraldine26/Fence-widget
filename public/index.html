@@ -55,8 +55,14 @@
             <p class="muted">Map unavailable. Enter total feet manually.</p>
           </div>
 
-          <p id="mapHint" class="muted">
-            Click to place points, drag points to edit, double click to finish one segment.
+          <p id="mapHint" class="map-hint muted">
+            <span
+              class="hint-icon"
+              aria-label="Drawing tips"
+              title="Click to place points, drag points to edit, double click to finish one segment."
+              >i</span
+            >
+            <span class="hint-text">Click to place points, drag points to edit, double click to finish one segment.</span>
           </p>
         </section>
 
@@ -107,10 +113,11 @@
 
           <div id="estimateBreakdown" class="breakdown"></div>
 
-          <button id="leadToggleBtn" type="button" class="lead-toggle">Get Exact Quote</button>
+          <button id="leadToggleBtn" type="button" class="lead-toggle">Request Final Quote</button>
+          <p class="form-helper">We’ll confirm details and send a final quote.</p>
 
           <form id="leadForm" class="lead-form" novalidate>
-            <h3>Get Exact Quote</h3>
+            <h3>Request Final Quote</h3>
 
             <label for="customerName">Full Name</label>
             <input id="customerName" name="customerName" type="text" required />
