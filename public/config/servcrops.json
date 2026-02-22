@@ -1,0 +1,18 @@
+{
+  "company_name": "ServCrops Fence",
+  "primary_color": "#0f766e",
+  "logo_url": "",
+  "disclaimer": "Instant range estimate based on current material rates.",
+  "webhook_url": "https://example.com/webhook/servcrops",
+  "maps": {
+    "enabled": true,
+    "google_maps_api_key": "",
+    "default_center": { "lat": 39.7392, "lng": -104.9903 },
+    "default_zoom": 18
+  },
+  "pricing_per_ft": {
+    "wood": { "low": 34, "high": 40 },
+    "vinyl": { "low": 43, "high": 50 },
+    "chainlink": { "low": 23, "high": 27 }
+  }
+}
