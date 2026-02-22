@@ -1,6 +1,7 @@
 (() => {
   const SCRIPT = document.currentScript;
-  const CLIENT = (SCRIPT?.dataset?.client || "demo").trim();
+  const urlClient = new URLSearchParams(window.location.search).get("client");
+  const CLIENT = (urlClient || SCRIPT?.dataset?.client || "demo").trim();
   const ROOT = document.getElementById("fence-quote");
 
   if (!ROOT) return;
