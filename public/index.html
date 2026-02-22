@@ -1,19 +1,60 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fence Widget</title>
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body>
-  <div class="page">
-    <h1 id="appTitle">Fence Quote Widget</h1>
-    <p id="appSubtitle">Instant Fence Estimate</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fence Quote Widget</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="widget" id="widgetRoot">
+      <header class="widget-header">
+        <img id="companyLogo" class="company-logo" alt="Company logo" hidden />
+        <div>
+          <h1 id="companyName">Fence Quote</h1>
+          <p id="disclaimer" class="muted"></p>
+        </div>
+      </header>
 
-    <div id="fence-quote"></div>
+      <section id="globalStatus" class="status" aria-live="polite">Loading configuration...</section>
 
-    <script src="/widget.js" data-client="demo"></script>
-  </div>
-</body>
+      <div class="layout">
+        <section class="card">
+          <h2>Fence Layout</h2>
+          <div id="mapContainer" class="map-wrap" hidden>
+            <div id="map"></div>
+            <div class="toolbar" role="toolbar" aria-label="Drawing controls">
+              <button id="drawBtn" type="button">Draw Segment</button>
+              <button id="editBtn" type="button">Toggle Edit</button>
+              <button id="resetBtn" type="button" class="secondary">Reset</button>
+            </div>
+          </div>
+          <div id="manualFeetWrap" class="manual-feet" hidden>
+            <label for="manualFeetInput">Linear feet</label>
+            <input id="manualFeetInput" type="number" min="0" step="1" value="0" />
+            <p class="muted">Map unavailable. Enter total feet manually.</p>
+          </div>
+          <p class="muted">Tip: right click on a segment to remove it.</p>
+        </section>
+
+        <section class="card">
+          <h2>Estimate</h2>
+          <label for="fenceType">Fence type</label>
+          <select id="fenceType"></select>
+
+          <div class="results">
+            <p>Total linear feet</p>
+            <p id="totalFeet" class="metric">0 ft</p>
+          </div>
+
+          <div class="results">
+            <p>Estimated price</p>
+            <p id="estimatedPrice" class="metric">$0</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="/widget.js" defer></script>
+  </body>
 </html>
