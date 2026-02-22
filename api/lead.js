@@ -4,6 +4,15 @@ const RATE_LIMIT_MAX = Number(process.env.LEAD_RATE_LIMIT_MAX || 8);
 const rateStore = globalThis.__FENCE_LEAD_RATE_STORE || new Map();
 globalThis.__FENCE_LEAD_RATE_STORE = rateStore;
 
+class PublicError extends Error {
+  constructor(statusCode, publicMessage, details) {
+    super(publicMessage);
+    this.statusCode = statusCode;
+    this.publicMessage = publicMessage;
+    this.details = details || "";
+  }
+}
+
 module.exports = async function handler(req, res) {
   try {
     if (req.method === "OPTIONS") {
@@ -40,6 +49,9 @@ module.exports = async function handler(req, res) {
     if (!apiKey || !fromEmail) {
       return sendJson(res, 500, { ok: false, error: "Email service is not configured." });
     }
+    if (!isValidEmail(fromEmail)) {
+      return sendJson(res, 500, { ok: false, error: "FROM_EMAIL is invalid." });
+    }
 
     const ownerSubject = `New Fence Lead – ${formatFeet(lead.totalLinearFeet)} ft – ${formatUsd(lead.estimatedMin)}-${formatUsd(
       lead.estimatedMax
@@ -74,6 +86,10 @@ module.exports = async function handler(req, res) {
 
     return sendJson(res, 200, { ok: true });
   } catch (err) {
+    if (err instanceof PublicError) {
+      console.error("/api/lead public error", { message: err.publicMessage, details: err.details });
+      return sendJson(res, err.statusCode, { ok: false, error: err.publicMessage });
+    }
     console.error("/api/lead error", err);
     return sendJson(res, 500, { ok: false, error: "Internal server error" });
   }
@@ -206,9 +222,32 @@ async function sendSendGridEmail({ apiKey, fromEmail, toEmail, subject, html, te
   });
 
   if (!response.ok) {
-    const details = await response.text();
-    throw new Error(`SendGrid failed (${response.status}): ${details.slice(0, 400)}`);
+    const raw = await response.text();
+    const providerDetails = extractSendGridMessage(raw);
+    let publicMessage = "Email delivery failed.";
+
+    if (response.status === 401) {
+      publicMessage = "SendGrid API key is invalid.";
+    } else if (response.status === 403) {
+      publicMessage = "Sender email is not verified in SendGrid.";
+    } else if (response.status === 400) {
+      publicMessage = "SendGrid rejected the email request. Check sender/recipient emails.";
+    }
+
+    throw new PublicError(500, publicMessage, `status=${response.status}; details=${providerDetails}`);
   }
+}
+
+function extractSendGridMessage(raw) {
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    const first = parsed?.errors?.[0];
+    if (first?.message) return String(first.message).slice(0, 400);
+  } catch {
+    // ignore
+  }
+  return String(raw).slice(0, 400);
 }
 
 function buildOwnerHtml(lead) {
