@@ -419,4 +419,13 @@ input {
   .mobile-summary-bar.is-visible {
     display: flex;
   }
+
+  body.mobile-step-review #map,
+  body.mobile-step-quote-ready #map {
+    height: 340px;
+  }
+
+  body.mobile-step-form #map {
+    height: 200px;
+  }
 }

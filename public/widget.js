@@ -786,20 +786,29 @@
     if (state.mobileStep === "quote-ready") {
       state.mobileStep = "form";
       applyMobileGuidedFlow(computeEstimate());
-      refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => refs.customerName.focus(), 280);
+      revealAndScrollToLeadForm();
       return;
     }
 
     if (state.mobileStep === "form") {
-      refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => refs.customerName.focus(), 250);
+      revealAndScrollToLeadForm();
       return;
     }
 
     // fallback
     state.mobileStep = "review";
     applyMobileGuidedFlow(computeEstimate());
+  }
+
+  function revealAndScrollToLeadForm() {
+    refs.leadForm.classList.remove("is-collapsed");
+    refs.leadToggleBtn.setAttribute("aria-expanded", "true");
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
+        refs.customerName.focus();
+      }, 120);
+    });
   }
 
   function buildCoordinatesArray() {
