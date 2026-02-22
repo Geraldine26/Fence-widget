@@ -21,10 +21,22 @@
       <div class="layout">
         <section class="card">
           <h2>Fence Layout</h2>
+          <div class="address-row">
+            <div>
+              <label for="addressInput">Property address</label>
+              <input
+                id="addressInput"
+                type="text"
+                autocomplete="street-address"
+                placeholder="123 Main St, City, State"
+              />
+            </div>
+            <button id="addressSearchBtn" type="button">Locate</button>
+          </div>
           <div id="mapContainer" class="map-wrap" hidden>
             <div id="map"></div>
             <div class="toolbar" role="toolbar" aria-label="Drawing controls">
-              <button id="drawBtn" type="button">Draw Segment</button>
+              <button id="drawBtn" type="button">Draw (Continuous)</button>
               <button id="editBtn" type="button">Toggle Edit</button>
               <button id="resetBtn" type="button" class="secondary">Reset</button>
             </div>
