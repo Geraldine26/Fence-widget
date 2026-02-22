@@ -15,9 +15,8 @@
     estimateMin: 0,
     estimateMax: 0,
     hasWarning: false,
-    mobileStep: "draw", // draw | review | quote-ready | form
-    optionsInteracted: false,
-    desktopFormOpen: false,
+    optionsConfirmed: false,
+    overlayOpen: false,
   };
 
   const refs = {
@@ -37,6 +36,8 @@
     removeLastBtn: document.getElementById("removeLastBtn"),
     clearAllBtn: document.getElementById("clearAllBtn"),
 
+    estimatePanel: document.getElementById("estimatePanel"),
+    estimateOptions: document.getElementById("estimateOptions"),
     fenceType: document.getElementById("fenceType"),
     walkGateQty: document.getElementById("walkGateQty"),
     doubleGateQty: document.getElementById("doubleGateQty"),
@@ -49,12 +50,18 @@
     totalFeet: document.getElementById("totalFeet"),
     estimatedPrice: document.getElementById("estimatedPrice"),
     estimateBreakdown: document.getElementById("estimateBreakdown"),
-    estimatePanel: document.querySelector(".estimate-panel"),
 
     leadToggleBtn: document.getElementById("leadToggleBtn"),
-    mobileLeadCta: document.getElementById("mobileLeadCta"),
+    quoteSuccess: document.getElementById("quoteSuccess"),
+
     mobileSummaryBar: document.getElementById("mobileSummaryBar"),
     mobileSummaryText: document.getElementById("mobileSummaryText"),
+    mobileLeadCta: document.getElementById("mobileLeadCta"),
+
+    quoteOverlay: document.getElementById("quoteOverlay"),
+    quoteBackdrop: document.getElementById("quoteBackdrop"),
+    quoteCloseBtn: document.getElementById("quoteCloseBtn"),
+
     leadForm: document.getElementById("leadForm"),
     submitLeadBtn: document.getElementById("submitLeadBtn"),
     customerName: document.getElementById("customerName"),
@@ -92,23 +99,17 @@
 
   function getClientKey() {
     const queryClient = new URLSearchParams(window.location.search).get("client");
-    if (queryClient && normalizeClientKey(queryClient)) {
-      return normalizeClientKey(queryClient);
-    }
+    if (queryClient && normalizeClientKey(queryClient)) return normalizeClientKey(queryClient);
 
     const scriptClient = getClientFromScriptDataset();
-    if (scriptClient) {
-      return normalizeClientKey(scriptClient);
-    }
+    if (scriptClient) return normalizeClientKey(scriptClient);
 
     return DEFAULT_CLIENT;
   }
 
   function getClientFromScriptDataset() {
     const current = document.currentScript;
-    if (current && current.dataset && current.dataset.client) {
-      return current.dataset.client;
-    }
+    if (current?.dataset?.client) return current.dataset.client;
 
     const scripts = Array.from(document.querySelectorAll("script[src]"));
     const widgetScript = scripts.find((s) => /widget\.js(\?|$)/.test(s.getAttribute("src") || ""));
@@ -150,9 +151,7 @@
   async function fetchJson(path) {
     try {
       const res = await fetch(path, { cache: "no-store" });
-      if (!res.ok) {
-        return null;
-      }
+      if (!res.ok) return null;
       return await res.json();
     } catch {
       return null;
@@ -164,9 +163,7 @@
     refs.tagline.textContent = sanitizeText(config.tagline || config.disclaimer || "");
 
     const color = String(config.primary_color || "").trim();
-    if (color) {
-      document.documentElement.style.setProperty("--primary-color", color);
-    }
+    if (color) document.documentElement.style.setProperty("--primary-color", color);
 
     if (config.logo_url) {
       refs.companyLogo.src = config.logo_url;
@@ -183,8 +180,7 @@
 
   function fillFenceTypeSelect() {
     refs.fenceType.innerHTML = "";
-    const keys = getFenceTypes();
-    keys.forEach((type) => {
+    getFenceTypes().forEach((type) => {
       const opt = document.createElement("option");
       opt.value = type;
       opt.textContent = formatLabel(type);
@@ -193,38 +189,23 @@
   }
 
   function updateAddressButtonLabel() {
-    const isMobile = window.matchMedia("(max-width: 680px)").matches;
-    refs.addressSearchBtn.textContent = isMobile ? "Find" : "Locate";
+    refs.addressSearchBtn.textContent = window.matchMedia("(max-width: 680px)").matches ? "Find" : "Locate";
   }
 
   function wireEvents() {
     window.addEventListener("resize", () => {
       updateAddressButtonLabel();
-      applyMobileGuidedFlow(computeEstimate());
+      applyMobileCtaState(computeEstimate());
     });
 
     refs.manualFeetInput.addEventListener("input", recomputeAndRender);
-    refs.fenceType.addEventListener("change", () => {
-      markOptionsInteracted();
-      recomputeAndRender();
-    });
-    refs.removeOldFence.addEventListener("change", () => {
-      markOptionsInteracted();
-      recomputeAndRender();
-    });
+    refs.fenceType.addEventListener("change", onOptionsChanged);
+    refs.removeOldFence.addEventListener("change", onOptionsChanged);
 
-    refs.walkGateMinus.addEventListener("click", () => {
-      updateStepperValue(refs.walkGateQty, -1);
-    });
-    refs.walkGatePlus.addEventListener("click", () => {
-      updateStepperValue(refs.walkGateQty, +1);
-    });
-    refs.doubleGateMinus.addEventListener("click", () => {
-      updateStepperValue(refs.doubleGateQty, -1);
-    });
-    refs.doubleGatePlus.addEventListener("click", () => {
-      updateStepperValue(refs.doubleGateQty, +1);
-    });
+    refs.walkGateMinus.addEventListener("click", () => updateStepperValue(refs.walkGateQty, -1));
+    refs.walkGatePlus.addEventListener("click", () => updateStepperValue(refs.walkGateQty, +1));
+    refs.doubleGateMinus.addEventListener("click", () => updateStepperValue(refs.doubleGateQty, -1));
+    refs.doubleGatePlus.addEventListener("click", () => updateStepperValue(refs.doubleGateQty, +1));
 
     refs.addressSearchBtn.addEventListener("click", locateAddress);
     refs.addressInput.addEventListener("keydown", (e) => {
@@ -237,22 +218,38 @@
     refs.removeLastBtn.addEventListener("click", removeLastSegment);
     refs.clearAllBtn.addEventListener("click", clearAllSegments);
 
-    refs.leadToggleBtn.addEventListener("click", toggleLeadForm);
-    refs.mobileLeadCta.addEventListener("click", onMobileSummaryAction);
+    refs.leadToggleBtn.addEventListener("click", () => {
+      if (state.totalFeet <= 0) {
+        setStatus("Measure fence first.", true);
+        return;
+      }
+      openQuoteOverlay();
+    });
+
+    refs.mobileLeadCta.addEventListener("click", onMobileCtaClick);
+
+    refs.quoteCloseBtn.addEventListener("click", closeQuoteOverlay);
+    refs.quoteBackdrop.addEventListener("click", closeQuoteOverlay);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && state.overlayOpen) closeQuoteOverlay();
+    });
 
     refs.leadForm.addEventListener("submit", submitLead);
   }
 
   function isMobileViewport() {
-    return window.matchMedia("(max-width: 768px)").matches;
+    return window.matchMedia("(max-width: 767px)").matches;
   }
 
-  function isPhoneViewport() {
-    return window.matchMedia("(max-width: 768px)").matches;
+  function isDesktopLikeViewport() {
+    return window.matchMedia("(min-width: 768px)").matches;
   }
 
-  function isDesktopViewport() {
-    return window.matchMedia("(min-width: 769px)").matches;
+  function onOptionsChanged() {
+    if (isMobileViewport() && state.totalFeet > 0) {
+      state.optionsConfirmed = true;
+    }
+    recomputeAndRender();
   }
 
   function updateStepperValue(input, delta) {
@@ -260,25 +257,9 @@
     const max = Number(input.max || 10);
     const current = Number(input.value || 0);
     const next = Math.max(min, Math.min(max, current + delta));
-    if (next === current) {
-      return;
-    }
+    if (next === current) return;
     input.value = String(next);
-    markOptionsInteracted();
-    recomputeAndRender();
-  }
-
-  function markOptionsInteracted() {
-    if (!isMobileViewport()) {
-      return;
-    }
-    if (state.totalFeet <= 0) {
-      return;
-    }
-    state.optionsInteracted = true;
-    if (state.mobileStep === "review") {
-      state.mobileStep = "quote-ready";
-    }
+    onOptionsChanged();
   }
 
   async function initMapIfEnabled(config) {
@@ -319,9 +300,7 @@
   }
 
   function loadGoogleMaps(apiKey) {
-    if (window.google?.maps?.geometry && window.google?.maps?.places) {
-      return Promise.resolve();
-    }
+    if (window.google?.maps?.geometry && window.google?.maps?.places) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
       const existing = document.querySelector("script[data-google-maps-loader]");
@@ -332,9 +311,7 @@
       }
 
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
-        apiKey
-      )}&libraries=geometry,places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=geometry,places`;
       script.async = true;
       script.defer = true;
       script.dataset.googleMapsLoader = "true";
@@ -345,7 +322,7 @@
   }
 
   function createMap(mapsConfig) {
-    const center = mapsConfig.default_center || { lat: 40.7608, lng: -111.8910 };
+    const center = mapsConfig.default_center || { lat: 40.7608, lng: -111.891 };
     const zoom = Number.isFinite(mapsConfig.default_zoom) ? mapsConfig.default_zoom : 19;
 
     state.map = new google.maps.Map(document.getElementById("map"), {
@@ -396,7 +373,7 @@
       focusProperty(place.geometry.location, place.geometry.viewport, formatted);
       state.addressReady = true;
       setStatus("Address found. Start drawing.", false);
-      applyMobileGuidedFlow(computeEstimate());
+      applyMobileCtaState(computeEstimate());
     });
   }
 
@@ -424,16 +401,14 @@
       focusProperty(result.geometry.location, result.geometry.viewport, result.formatted_address);
       state.addressReady = true;
       setStatus("Address found. Start drawing.", false);
-      applyMobileGuidedFlow(computeEstimate());
+      applyMobileCtaState(computeEstimate());
     });
   }
 
   function focusProperty(location, viewport, title) {
-    if (isDesktopViewport()) {
-      if (!fitMapToSegmentsDesktop()) {
-        state.map.panTo(location);
-        state.map.setZoom(19);
-      }
+    if (isDesktopLikeViewport() && !fitMapToSegmentsDesktop()) {
+      state.map.panTo(location);
+      state.map.setZoom(19);
     } else if (viewport) {
       state.map.fitBounds(viewport);
       const z = state.map.getZoom() || 20;
@@ -453,38 +428,28 @@
   }
 
   function fitMapToSegmentsDesktop() {
-    if (!isDesktopViewport() || !state.map || !window.google?.maps?.LatLngBounds) {
-      return false;
-    }
+    if (!isDesktopLikeViewport() || !state.map || !window.google?.maps?.LatLngBounds) return false;
 
     const bounds = new google.maps.LatLngBounds();
     let hasPoints = false;
 
     const polylines = [...state.segments];
-    if (state.activeSegment && state.activeSegment.getPath().getLength() >= 2) {
-      polylines.push(state.activeSegment);
-    }
+    if (state.activeSegment && state.activeSegment.getPath().getLength() >= 2) polylines.push(state.activeSegment);
 
     polylines.forEach((seg) => {
       const path = seg.getPath();
-      if (!path || path.getLength() < 2) {
-        return;
-      }
+      if (!path || path.getLength() < 2) return;
       path.forEach((latLng) => {
         bounds.extend(latLng);
         hasPoints = true;
       });
     });
 
-    if (!hasPoints) {
-      return false;
-    }
+    if (!hasPoints) return false;
 
     state.map.fitBounds(bounds, 40);
     const z = state.map.getZoom() || 19;
-    if (z < 17) {
-      state.map.setZoom(17);
-    }
+    if (z < 17) state.map.setZoom(17);
     return true;
   }
 
@@ -560,9 +525,7 @@
     state.segments.forEach((seg) => seg.setMap(null));
     state.segments = [];
     recomputeAndRender();
-    if (state.addressReady) {
-      setStatus("Address found. Start drawing.", false);
-    }
+    if (state.addressReady) setStatus("Address found. Start drawing.", false);
   }
 
   function getFenceTypes() {
@@ -582,9 +545,7 @@
     }
 
     const legacy = state.config.pricing_per_ft?.[type];
-    if (typeof legacy === "number") {
-      return { low: legacy, high: legacy };
-    }
+    if (typeof legacy === "number") return { low: legacy, high: legacy };
 
     return {
       low: toPositive(legacy?.low),
@@ -620,9 +581,7 @@
     let meters = 0;
     state.segments.forEach((seg) => {
       const path = seg.getPath();
-      if (path.getLength() >= 2) {
-        meters += google.maps.geometry.spherical.computeLength(path);
-      }
+      if (path.getLength() >= 2) meters += google.maps.geometry.spherical.computeLength(path);
     });
 
     if (state.activeSegment && state.activeSegment.getPath().getLength() >= 2) {
@@ -647,13 +606,10 @@
 
     const materialMin = perFt.low * feet;
     const materialMax = perFt.high * feet;
-
     const walkMin = addons.walk.low * walkQty;
     const walkMax = addons.walk.high * walkQty;
-
     const doubleMin = addons.dbl.low * doubleQty;
     const doubleMax = addons.dbl.high * doubleQty;
-
     const removalMin = removeOld ? addons.removal.low * feet : 0;
     const removalMax = removeOld ? addons.removal.high * feet : 0;
 
@@ -698,118 +654,71 @@
       .map((row) => `<div>${row}</div>`)
       .join("");
 
-    applyMobileGuidedFlow(calc);
+    applyMobileCtaState(calc);
   }
 
-  function applyMobileGuidedFlow(calc) {
+  function applyMobileCtaState(calc) {
     if (!isMobileViewport()) {
       refs.mobileSummaryBar.classList.remove("is-visible");
-      refs.leadForm.classList.toggle("is-collapsed", !state.desktopFormOpen);
-      refs.leadToggleBtn.setAttribute("aria-expanded", state.desktopFormOpen ? "true" : "false");
-      document.body.classList.remove("mobile-step-draw", "mobile-step-review", "mobile-step-quote-ready", "mobile-step-form", "form-open");
-      refs.mobileLeadCta.textContent = "Continue";
       return;
     }
 
-    if (calc.feet <= 0) {
-      state.mobileStep = "draw";
-      state.optionsInteracted = false;
+    if (state.overlayOpen || calc.feet <= 0) {
       refs.mobileSummaryBar.classList.remove("is-visible");
-      refs.leadForm.classList.add("is-collapsed");
-      refs.leadToggleBtn.setAttribute("aria-expanded", "false");
-      document.body.classList.remove("mobile-step-review", "mobile-step-quote-ready", "mobile-step-form", "form-open");
-      document.body.classList.add("mobile-step-draw");
+      state.optionsConfirmed = false;
       refs.mobileLeadCta.textContent = "Continue";
       return;
-    }
-
-    if (state.mobileStep === "draw") {
-      state.mobileStep = state.optionsInteracted ? "quote-ready" : "review";
-    }
-    if (state.mobileStep === "review" && state.optionsInteracted) {
-      state.mobileStep = "quote-ready";
     }
 
     refs.mobileSummaryBar.classList.add("is-visible");
-
-    if (state.mobileStep === "form") {
-      document.body.classList.remove("mobile-step-draw");
-      document.body.classList.remove("mobile-step-review", "mobile-step-quote-ready");
-      document.body.classList.add("mobile-step-form");
-      refs.leadForm.classList.remove("is-collapsed");
-      refs.leadToggleBtn.setAttribute("aria-expanded", "true");
-      if (isPhoneViewport()) {
-        refs.mobileSummaryBar.classList.remove("is-visible");
-      } else {
-        refs.mobileLeadCta.textContent = "Send My Quote Request";
-      }
-      return;
-    }
-
-    if (state.mobileStep === "quote-ready") {
-      document.body.classList.remove("mobile-step-draw", "mobile-step-review", "mobile-step-form", "form-open");
-      document.body.classList.add("mobile-step-quote-ready");
-      refs.leadForm.classList.add("is-collapsed");
-      refs.leadToggleBtn.setAttribute("aria-expanded", "false");
-      refs.mobileLeadCta.textContent = "Get Exact Quote";
-      return;
-    }
-
-    // review
-    document.body.classList.remove("mobile-step-quote-ready", "mobile-step-form", "form-open");
-    document.body.classList.remove("mobile-step-draw");
-    document.body.classList.add("mobile-step-review");
-    refs.leadForm.classList.add("is-collapsed");
-    refs.leadToggleBtn.setAttribute("aria-expanded", "false");
-    refs.mobileLeadCta.textContent = "Continue";
+    refs.mobileLeadCta.textContent = state.optionsConfirmed ? "Request Final Quote" : "Continue";
   }
 
-  function onMobileSummaryAction() {
+  function onMobileCtaClick() {
     if (!isMobileViewport()) {
-      openLeadForm();
-      refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => refs.customerName.focus(), 250);
+      openQuoteOverlay();
       return;
     }
 
-    if (state.totalFeet <= 0) {
-      return;
-    }
+    if (state.totalFeet <= 0) return;
 
-    if (state.mobileStep === "review") {
-      state.optionsInteracted = true;
-      state.mobileStep = "quote-ready";
-      applyMobileGuidedFlow(computeEstimate());
+    if (!state.optionsConfirmed) {
+      state.optionsConfirmed = true;
       refs.estimatePanel.scrollIntoView({ behavior: "smooth", block: "start" });
+      applyMobileCtaState(computeEstimate());
       return;
     }
 
-    if (state.mobileStep === "quote-ready") {
-      state.mobileStep = "form";
-      applyMobileGuidedFlow(computeEstimate());
-      revealAndScrollToLeadForm();
-      return;
-    }
-
-    if (state.mobileStep === "form") {
-      revealAndScrollToLeadForm();
-      return;
-    }
-
-    // fallback
-    state.mobileStep = "review";
-    applyMobileGuidedFlow(computeEstimate());
+    openQuoteOverlay();
   }
 
-  function revealAndScrollToLeadForm() {
-    refs.leadForm.classList.remove("is-collapsed");
-    refs.leadToggleBtn.setAttribute("aria-expanded", "true");
+  function openQuoteOverlay() {
+    state.overlayOpen = true;
+    refs.quoteOverlay.classList.add("is-open");
+    refs.quoteOverlay.setAttribute("aria-hidden", "false");
+    document.body.classList.add("overlay-open");
+    refs.mobileSummaryBar.classList.remove("is-visible");
+
+    if (!refs.customerAddress.value && refs.addressInput.value) {
+      refs.customerAddress.value = refs.addressInput.value;
+    }
+
     requestAnimationFrame(() => {
       setTimeout(() => {
-        refs.leadForm.scrollIntoView({ behavior: "smooth", block: "start" });
         refs.customerName.focus();
-      }, 120);
+        if (isMobileViewport()) {
+          refs.customerName.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
     });
+  }
+
+  function closeQuoteOverlay() {
+    state.overlayOpen = false;
+    refs.quoteOverlay.classList.remove("is-open");
+    refs.quoteOverlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("overlay-open");
+    applyMobileCtaState(computeEstimate());
   }
 
   function buildCoordinatesArray() {
@@ -889,57 +798,18 @@
       } else {
         console.log("Lead payload", payload);
       }
-      setStatus("Lead submitted successfully.", false);
+
       refs.leadForm.reset();
       refs.customerAddress.value = refs.addressInput.value;
+      refs.quoteSuccess.hidden = false;
+      setStatus("Lead submitted successfully.", false);
+      closeQuoteOverlay();
     } catch (err) {
       console.error(err);
       setStatus("Failed to submit lead. Try again.", true);
     } finally {
       refs.submitLeadBtn.disabled = false;
       refs.submitLeadBtn.textContent = "Send Quote Request";
-    }
-  }
-
-  function toggleLeadForm() {
-    if (!isMobileViewport()) {
-      state.desktopFormOpen = !state.desktopFormOpen;
-      refs.leadForm.classList.toggle("is-collapsed", !state.desktopFormOpen);
-      refs.leadToggleBtn.setAttribute("aria-expanded", state.desktopFormOpen ? "true" : "false");
-      if (state.desktopFormOpen) {
-        setTimeout(() => refs.customerName.focus(), 120);
-      }
-      return;
-    }
-    const collapsed = refs.leadForm.classList.contains("is-collapsed");
-    if (collapsed) {
-      openLeadForm();
-    } else {
-      closeLeadForm();
-    }
-  }
-
-  function openLeadForm() {
-    if (!isMobileViewport()) {
-      state.desktopFormOpen = true;
-    }
-    refs.leadForm.classList.remove("is-collapsed");
-    refs.leadToggleBtn.setAttribute("aria-expanded", "true");
-    document.body.classList.add("form-open");
-    if (isPhoneViewport()) {
-      refs.mobileSummaryBar.classList.remove("is-visible");
-    }
-  }
-
-  function closeLeadForm() {
-    if (!isMobileViewport()) {
-      state.desktopFormOpen = false;
-    }
-    refs.leadForm.classList.add("is-collapsed");
-    refs.leadToggleBtn.setAttribute("aria-expanded", "false");
-    document.body.classList.remove("form-open");
-    if (isPhoneViewport() && state.totalFeet > 0) {
-      refs.mobileSummaryBar.classList.add("is-visible");
     }
   }
 

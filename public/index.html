@@ -25,7 +25,7 @@
       <section id="globalStatus" class="status" aria-live="polite">Loading configuration...</section>
 
       <div class="layout">
-        <section class="card">
+        <section class="card measurement-card">
           <h2>Fence Measurement</h2>
 
           <div class="address-row">
@@ -66,33 +66,25 @@
           </p>
         </section>
 
-        <aside class="card estimate-panel">
+        <aside class="card estimate-panel" id="estimatePanel">
           <h2>Estimate</h2>
 
           <label for="fenceType">Fence Type</label>
           <select id="fenceType"></select>
 
-          <div class="addons-grid">
+          <div class="addons-grid" id="estimateOptions">
             <label for="walkGateQty">Walk Gate Qty</label>
             <div class="stepper" role="group" aria-label="Walk gate quantity">
-              <button id="walkGateMinus" type="button" class="stepper-btn" aria-label="Decrease walk gate">
-                -
-              </button>
+              <button id="walkGateMinus" type="button" class="stepper-btn" aria-label="Decrease walk gate">-</button>
               <input id="walkGateQty" type="number" min="0" max="10" step="1" value="0" readonly />
-              <button id="walkGatePlus" type="button" class="stepper-btn" aria-label="Increase walk gate">
-                +
-              </button>
+              <button id="walkGatePlus" type="button" class="stepper-btn" aria-label="Increase walk gate">+</button>
             </div>
 
             <label for="doubleGateQty">Double Gate Qty</label>
             <div class="stepper" role="group" aria-label="Double gate quantity">
-              <button id="doubleGateMinus" type="button" class="stepper-btn" aria-label="Decrease double gate">
-                -
-              </button>
+              <button id="doubleGateMinus" type="button" class="stepper-btn" aria-label="Decrease double gate">-</button>
               <input id="doubleGateQty" type="number" min="0" max="10" step="1" value="0" readonly />
-              <button id="doubleGatePlus" type="button" class="stepper-btn" aria-label="Increase double gate">
-                +
-              </button>
+              <button id="doubleGatePlus" type="button" class="stepper-btn" aria-label="Increase double gate">+</button>
             </div>
 
             <label class="checkbox-row" for="removeOldFence">
@@ -115,33 +107,41 @@
 
           <button id="leadToggleBtn" type="button" class="lead-toggle">Request Final Quote</button>
           <p class="form-helper">We’ll confirm details and send a final quote.</p>
-
-          <form id="leadForm" class="lead-form" novalidate>
-            <h3>Request Final Quote</h3>
-
-            <label for="customerName">Full Name</label>
-            <input id="customerName" name="customerName" type="text" required />
-
-            <label for="customerPhone">Phone</label>
-            <input id="customerPhone" name="customerPhone" type="tel" required />
-
-            <label for="customerEmail">Email</label>
-            <input id="customerEmail" name="customerEmail" type="email" required />
-
-            <label for="customerAddress">Property Address</label>
-            <input id="customerAddress" name="customerAddress" type="text" required />
-
-            <input id="websiteTrap" name="website" type="text" autocomplete="off" tabindex="-1" />
-
-            <button id="submitLeadBtn" type="submit">Send Quote Request</button>
-          </form>
+          <p id="quoteSuccess" class="quote-success" role="status" hidden>Quote request sent successfully.</p>
         </aside>
       </div>
     </main>
 
-    <div id="mobileSummaryBar" class="mobile-summary-bar">
+    <div id="mobileSummaryBar" class="mobile-summary-bar" aria-live="polite">
       <p id="mobileSummaryText">0.0 ft • $0-$0</p>
       <button id="mobileLeadCta" type="button" class="mobile-summary-btn">Continue</button>
+    </div>
+
+    <div id="quoteOverlay" class="quote-overlay" aria-hidden="true">
+      <div id="quoteBackdrop" class="quote-backdrop"></div>
+      <section class="quote-dialog" role="dialog" aria-modal="true" aria-labelledby="quoteDialogTitle">
+        <button id="quoteCloseBtn" type="button" class="quote-close" aria-label="Close quote form">×</button>
+        <h3 id="quoteDialogTitle">Request Final Quote</h3>
+        <p class="form-helper">We’ll confirm details and send a final quote.</p>
+
+        <form id="leadForm" class="lead-form" novalidate>
+          <label for="customerName">Full Name</label>
+          <input id="customerName" name="customerName" type="text" required />
+
+          <label for="customerPhone">Phone</label>
+          <input id="customerPhone" name="customerPhone" type="tel" required />
+
+          <label for="customerEmail">Email</label>
+          <input id="customerEmail" name="customerEmail" type="email" required />
+
+          <label for="customerAddress">Property Address</label>
+          <input id="customerAddress" name="customerAddress" type="text" required />
+
+          <input id="websiteTrap" name="website" type="text" autocomplete="off" tabindex="-1" />
+
+          <button id="submitLeadBtn" type="submit">Send Quote Request</button>
+        </form>
+      </section>
     </div>
 
     <script src="/widget.js" data-client="demo" defer></script>
